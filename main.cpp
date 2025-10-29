@@ -72,9 +72,9 @@ void Account:: authorize(string password) {
 }
 
 
-//ZHANNNURRR 
 
 
+//mushfique
 class AdminCard {
 	private:
 public:
