@@ -72,9 +72,6 @@ void Account:: authorize(string password) {
 }
 
 
-
-
-//mushfique
 class AdminCard {
 	private:
 public:
