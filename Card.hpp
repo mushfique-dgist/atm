@@ -1,12 +1,13 @@
+#pragma once
 #include <string>
 #include "types.hpp"
 
 class Card {
 private:
-    CardNumber number;      
-    BankName bank_;           
-    std::string password_;    
-    CardRole role_;           
+    std::string CardNumber ;      
+    Bank BankName;           
+    std::int  password;    
+           
 
 public:
     Card(const CardNumber& num,
@@ -14,7 +15,6 @@ public:
          const std::string& pass,
          CardRole role = CardRole::User);
 
-    // Методы
     const CardNumber& getNumber() const;
     const BankName& getBank() const;
     CardRole getRole() const;
