@@ -3,6 +3,7 @@
 #include <fstream>
 #include <string>
 #include <map>
+#include "Card.hpp"
 using namespace std;
 
 

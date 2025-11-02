@@ -1,4 +1,4 @@
-#include "card.hpp" 
+#include "Card.hpp"
 
 Card::Card(const CardNumber& num,
            const BankName& bank,
