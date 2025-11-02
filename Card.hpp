@@ -1,23 +1,20 @@
 #pragma once
 #include <string>
-#include "types.hpp"
+#include "CommonTypes.hpp"
 
 class Card {
 private:
-    std::string CardNumber ;      
-    Bank BankName;           
-    std::int  password;    
-           
+    CardNumber cardNumber ;      
+    BankName bankName;           
+    CardRole role; 
 
 public:
-    Card(const CardNumber& num,
-         const BankName& bank,
-         const std::string& pass,
+    Card(const CardNumber& card_num,
+         const BankName& card_bank,
          CardRole role = CardRole::User);
 
     const CardNumber& getNumber() const;
     const BankName& getBank() const;
     CardRole getRole() const;
-    bool verifyPassword(const std::string& input) const;
     bool isAdmin() const;
 };

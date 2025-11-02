@@ -1,19 +1,21 @@
 #include "Card.hpp"
 
-Card::Card(const CardNumber& num,
-           const BankName& bank,
-           const std::string& pass,
-           CardRole role)
-    : number_(num), bank_(bank), password_(pass), role_(role) {}
+Card(const CardNumber& card_num,
+     const BankName& bank,
+     CardRole role = CardRole::User):
+     cardNumber(card_num), BankName(card_bank), CardRole(role){}
 
-const CardNumber& Card::getNumber() const { return number_; }
-const BankName& Card::getBank() const { return bank_; }
-CardRole Card::getRole() const { return role_; }
-
-bool Card::verifyPassword(const std::string& input) const {
-    return input == password_;
+const CardNumber& getNumber() const{
+    return cardNumber;
 }
 
-bool Card::isAdmin() const {
-    return role_ == CardRole::Admin;
+const BankName& getBank() const{
+    return bankName;
 }
+
+CardRole getRole() const{
+    return role}
+
+bool isAdmin() const{
+    return role == CardRole::Admin;
+};
