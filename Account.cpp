@@ -15,11 +15,6 @@ private:
 public:
     Account();
 
-    Card(const CardNumber& num,
-         const BankName& bank,
-         const std::string& pass,
-         CardRole role = CardRole::User);
-
     string getAccountNumber();
     double getAvailableFunds()
     void credit(double amount);
