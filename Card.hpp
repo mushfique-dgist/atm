@@ -4,9 +4,9 @@
 
 class Card {
 private:
-    CardNumber cardNumber ;      
-    BankName bankName;           
-    CardRole role; 
+    CardNumber cardNumber ;
+    BankName bankName;
+    CardRole role;
 
 public:
     Card(const CardNumber& card_num,
