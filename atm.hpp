@@ -82,6 +82,7 @@ struct SessionState {
     bool isPrimaryBankCard;
     SessionEvent records[MAX_SESSION_EVENTS];
     int recordCount;
+    int withdrawalCount;
 
     SessionState();
 };
