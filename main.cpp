@@ -1,188 +1,6 @@
-//testing
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <map>
-#include "Card.hpp"
-using namespace std;
-
-
-enum class transaction_type {
-	deposit, withdrawal, remittance, paying,
-};
-
-// TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
-
-class Card;
-class Account;
-class User;
-class AdminCard;
-class ATM;
-class Transaction;
-class Bank;
-class KoreaBank;
-
-
-
-class Card {
-private:
-	int Card_number;
-	Account *account;
-	Transaction** log;
-	int log_counter;
-	int password;
-
-public:
-	Card();
-	~Card();
-};
-
-
-class Account {
-private:
-	bool Authorized = false;
-	User* user;
-	Transaction** log;
-	Bank* bank;
-	int hash_pass;
-	hash<string> hasher;
-	Card** cards;
-	int log_count;
-public:
-	Account();
-	~Account();
-	void set_password(string);
-	void authorize(string);
-
-};
-
-
-void Account::set_password(string password) {
-	if (Authorized) {
-		hash_pass = hasher(password);
-		Authorized = false;
-	}
-
-}
-
-void Account:: authorize(string password) {
-	int given = hasher(password);
-	if (hash_pass == given) {
-		Authorized = true;
-	}
-}
-
-
-class AdminCard {
-	private:
-public:
-	AdminCard();
-	~AdminCard();
-};
-
-class Transaction {
-public:
-	Transaction(transaction_type, int, Account, Account);
-	~Transaction();
-	void authorize();
-	virtual string tostring() const; // override the string type
-
-private:
-	transaction_type transactoin;
-	int amount, fee;
-	Account subject, object;
-
-};
-
-class Language {
-public:
-	string welcome;
-	string second;
-
-};
-
-class ATM {
-private:
-	const static Language* Korean;
-	const static Language* English;
-	Language* language;
-
-
-	int ATM_ID;
-	AdminCard admincard;
-
-	Bank** banks;
-	int banks_count;
-
-	Transaction** log;
-	int log_counter;
-public:
-
-
-};
-
-
-
-class Bank {
-private:
-	static int banknumber;
-	Account account;
-	int id;
-	Account **accounts;
-	ATM **atms;
-
-public:
-
-
-};
-
-class KoreaBank {
-
-};
-
-
-class User {
-private:
-	int userid;
-	string username;
-	Account account;
-public:
-	string getname;
-	int* get_number;
-
-};
-
-
-
-
-class Interface;
-
-
-
-
-
-class Single_Bank: public Bank {
-	public:
-};
-
-class Multibank: public Bank {
-
-};
-
-class one_bank_user: public User {
-
-};
-
-class multi_bank_user: public User {
-
-};
-
-
-
-
-
-
-
 
 using namespace std;
 
@@ -227,7 +45,7 @@ int main(){
 	for (int i = 0; i < atmCount; ++i) {
         // Dynamic allocation for atmInitialCash
 		atmInitialCash[i] = new int[4]; // holding initial cash: [50000won, 10000won, 5000won, 1000won]
-
+		
         // Store ATM Serial numbers
         fin >> atmBanks[i] >> atmSerials[i];
 
@@ -236,7 +54,7 @@ int main(){
 		fin >> singleBankStr >> unilingualStr;
 		atmSingleBanks[i] = (singleBankStr == "Single");
 		atmUnilinguals[i] = (unilingualStr == "Unilingual");
-
+		
         // Read initial cash for the ATM
 		for (int j = 0; j < 4; ++j) {
 			fin >> atmInitialCash[i][j];
@@ -294,4 +112,3 @@ int main(){
 
 	return 0;
 }
-

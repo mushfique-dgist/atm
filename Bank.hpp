@@ -1,3 +1,5 @@
+#pragma once
+
 #include <vector>
 #include <string>
 
@@ -15,7 +17,13 @@ private:
     Accounts accounts;         
     Cards cards;                   
     BanksList& allBanks;           
-    TransactionsList& transactionList; }
+    TransactionsList& transactionList; 
+
+public:
+    
+
+
+}
     
 
 
