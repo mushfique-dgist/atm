@@ -6,15 +6,12 @@ class Card {
 private:
     CardNumber cardNumber ;
     BankName bankName;
-    CardRole role;
 
 public:
     Card(const CardNumber& card_num,
-         const BankName& card_bank,
-         CardRole role = CardRole::User);
-
-    const CardNumber& getNumber() const;
-    const BankName& getBank() const;
+         const BankName& card_bank);
+    const CardNumber& getNumber() const{return cardNumber;}
+    const BankName& getBank() const{return bankName;}
     CardRole getRole() const;
     bool isAdmin() const;
 };

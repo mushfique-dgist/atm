@@ -3,6 +3,7 @@
 
 #include <ostream>
 #include <string>
+#include "CommonTypes.hpp"
 
 class Account;
 class AdminCard;
@@ -124,6 +125,7 @@ public:
     void RequestWithdrawal(long long amount);
     void RequestAccountTransfer(Account* destination, long long amount);
     void RequestCashTransfer(long long amount);
+    void CheckInsertedCard();
 
 private:
     std::string serialNumber_;
@@ -139,7 +141,10 @@ private:
     bool sessionActive_;
 
     void ClearSession();
+    
     bool CheckSessionActive(ATMMode expectedMode) const;
 };
 
 #endif // ATM_HPP
+
+
