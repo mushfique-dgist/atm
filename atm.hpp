@@ -142,7 +142,7 @@ private:
     bool sessionActive_;
 
     void ClearSession();
-    
+
     bool CheckSessionActive(ATMMode expectedMode) const;
 };
 
