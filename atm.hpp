@@ -3,7 +3,6 @@
 
 #include <ostream>
 #include <string>
-#include "CommonTypes.hpp"
 
 class Account;
 class AdminCard;

@@ -3,6 +3,11 @@
 #include <algorithm>
 #include <iostream>
 
+#include "Account.hpp"
+#include "Bank.hpp"
+#include "Card.hpp"
+#include "Transaction.hpp"
+
 static const int CASH_BILL_VALUES[CASH_TYPE_COUNT] = {1000, 5000, 10000, 50000};
 
 namespace {
@@ -345,13 +350,32 @@ void ATM::RequestDeposit(const CashDrawer& cash, long long checkAmount) {
         return;
     }
 
+    Account* account = sessionInfo_.primaryAccount;
+    if (account == nullptr) {
+        std::cout << "No account is linked to this session.\n";
+        return;
+    }
+
+    Bank* accountBank = account->getBank();
+    if (accountBank == nullptr) {
+        std::cout << "Unable to locate the bank for this account.\n";
+        return;
+    }
+
+    long long depositAmount = cash.TotalValue() + checkAmount;
+    if (depositAmount <= 0) {
+        std::cout << "Deposit amount must be positive.\n";
+        return;
+    }
+
     SessionEvent event;
     event.transactionType = ATMTransaction_Deposit;
-    event.amount = cash.TotalValue() + checkAmount;
-    if (sessionInfo_.isPrimaryBankCard) {
-        event.feeCharged = fees_.depositPrimary;
-    } else {
-        event.feeCharged = fees_.depositNonPrimary;
+    event.amount = depositAmount;
+    event.feeCharged = sessionInfo_.isPrimaryBankCard ? fees_.depositPrimary : fees_.depositNonPrimary;
+
+    if (!accountBank->deposit(account, depositAmount)) {
+        std::cout << "Deposit failed.\n";
+        return;
     }
 
     CashDrawer addedCash;
@@ -360,14 +384,31 @@ void ATM::RequestDeposit(const CashDrawer& cash, long long checkAmount) {
         addedCash = cash;
     }
     event.cashChange = addedCash;
+    event.sourceAccount.clear();
+    event.targetAccount = account->getAccountNumber();
 
     if (checkAmount > 0) {
-        event.note = "Check deposit accepted (update account balance separately)";
+        event.note = "Check deposit completed";
     } else {
-        event.note = "Deposit accepted (update account balance separately)";
+        event.note = "Deposit completed";
+    }
+    if (event.feeCharged > 0) {
+        event.note += " (fee inserted separately)";
     }
 
     RecordEvent(event);
+
+    const Card* card = sessionInfo_.card;
+    std::string cardNumber = card != nullptr ? card->getNumber() : "";
+    Transaction* transaction = new DepositTransaction(serialNumber_,
+                                                      cardNumber,
+                                                      account->getBankName(),
+                                                      account->getAccountNumber(),
+                                                      depositAmount,
+                                                      event.feeCharged,
+                                                      event.note);
+    accountBank->addTransaction(transaction);
+    account->recordTransaction(transaction);
 }
 
 void ATM::RequestWithdrawal(long long amount) {
@@ -401,29 +442,140 @@ void ATM::RequestWithdrawal(long long amount) {
         return;
     }
 
-    cashInventory_.Remove(bundle);
+    Account* account = sessionInfo_.primaryAccount;
+    if (account == nullptr) {
+        std::cout << "No account is linked to this session.\n";
+        return;
+    }
+
+    Bank* accountBank = account->getBank();
+    if (accountBank == nullptr) {
+        std::cout << "Unable to locate the bank for this account.\n";
+        return;
+    }
 
     SessionEvent event;
     event.transactionType = ATMTransaction_Withdrawal;
     event.amount = amount;
     event.cashChange = bundle;
-    if (sessionInfo_.isPrimaryBankCard) {
-        event.feeCharged = fees_.withdrawalPrimary;
-    } else {
-        event.feeCharged = fees_.withdrawalNonPrimary;
+    event.feeCharged = sessionInfo_.isPrimaryBankCard ? fees_.withdrawalPrimary : fees_.withdrawalNonPrimary;
+
+    long long totalCost = amount + event.feeCharged;
+    if (!accountBank->withdraw(account, totalCost)) {
+        std::cout << "Insufficient funds in the account.\n";
+        return;
     }
-    event.note = "Withdrawal completed (deduct funds from account separately)";
+
+    cashInventory_.Remove(bundle);
+    event.sourceAccount = account->getAccountNumber();
+    event.targetAccount.clear();
+    event.note = "Withdrawal completed";
+    if (event.feeCharged > 0) {
+        event.note += " (fee deducted from account)";
+    }
 
     ++sessionInfo_.withdrawalCount;
     RecordEvent(event);
+
+    const Card* card = sessionInfo_.card;
+    std::string cardNumber = card != nullptr ? card->getNumber() : "";
+    Transaction* transaction = new WithdrawalTransaction(serialNumber_,
+                                                         cardNumber,
+                                                         account->getBankName(),
+                                                         account->getAccountNumber(),
+                                                         amount,
+                                                         event.feeCharged,
+                                                         event.note);
+    accountBank->addTransaction(transaction);
+    account->recordTransaction(transaction);
 }
 
-void ATM::RequestAccountTransfer(Account* /*destination*/, long long /*amount*/) {
+namespace {
+
+long long DetermineTransferFee(const Bank* primaryBank,
+                               Bank* sourceBank,
+                               Bank* destinationBank,
+                               const ATMFees& fees) {
+    bool sourceIsPrimary = (primaryBank != nullptr && sourceBank == primaryBank);
+    bool destinationIsPrimary = (primaryBank != nullptr && destinationBank == primaryBank);
+
+    if (sourceIsPrimary && destinationIsPrimary) {
+        return fees.transferPrimaryToPrimary;
+    }
+    if (sourceIsPrimary || destinationIsPrimary) {
+        return fees.transferPrimaryToOther;
+    }
+    return fees.transferNonPrimaryToNonPrimary;
+}
+
+} // namespace
+
+void ATM::RequestAccountTransfer(Account* destination, long long amount) {
     if (!CheckSessionActive(ATMMode_Customer)) {
         return;
     }
 
-    std::cout << "Account transfer feature not implemented yet.\n";
+    if (destination == nullptr) {
+        std::cout << "Destination account is invalid.\n";
+        return;
+    }
+
+    Account* source = sessionInfo_.primaryAccount;
+    if (source == nullptr) {
+        std::cout << "No source account is linked to this session.\n";
+        return;
+    }
+
+    if (source == destination) {
+        std::cout << "Cannot transfer to the same account.\n";
+        return;
+    }
+
+    if (amount <= 0) {
+        std::cout << "Transfer amount must be positive.\n";
+        return;
+    }
+
+    Bank* sourceBank = source->getBank();
+    Bank* destinationBank = destination->getBank();
+    if (sourceBank == nullptr || destinationBank == nullptr) {
+        std::cout << "Unable to locate the banks for the accounts.\n";
+        return;
+    }
+
+    long long fee = DetermineTransferFee(primaryBank_, sourceBank, destinationBank, fees_);
+    if (!sourceBank->transfer(source, destination, amount, fee)) {
+        std::cout << "Transfer failed due to insufficient funds or invalid accounts.\n";
+        return;
+    }
+
+    SessionEvent event;
+    event.transactionType = ATMTransaction_AccountTransfer;
+    event.amount = amount;
+    event.feeCharged = fee;
+    event.sourceAccount = source->getAccountNumber();
+    event.targetAccount = destination->getAccountNumber();
+    event.note = "Account transfer completed";
+    if (fee > 0) {
+        event.note += " (fee deducted from source account)";
+    }
+
+    RecordEvent(event);
+
+    const Card* card = sessionInfo_.card;
+    std::string cardNumber = card != nullptr ? card->getNumber() : "";
+    Transaction* transaction = new AccountTransferTransaction(serialNumber_,
+                                                              cardNumber,
+                                                              source->getBankName(),
+                                                              source->getAccountNumber(),
+                                                              destination->getBankName(),
+                                                              destination->getAccountNumber(),
+                                                              amount,
+                                                              fee,
+                                                              event.note);
+    sourceBank->addTransaction(transaction);
+    source->recordTransaction(transaction);
+    destination->recordTransaction(transaction);
 }
 
 void ATM::RequestCashTransfer(long long /*amount*/) {
