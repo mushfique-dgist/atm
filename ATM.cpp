@@ -1,4 +1,4 @@
-#include "atm.hpp"
+#include "Atm.hpp"
 
 #include <algorithm>
 #include <iostream>
