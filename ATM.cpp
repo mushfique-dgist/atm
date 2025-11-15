@@ -578,12 +578,67 @@ void ATM::RequestAccountTransfer(Account* destination, long long amount) {
     destination->recordTransaction(transaction);
 }
 
-void ATM::RequestCashTransfer(long long /*amount*/) {
+void ATM::RequestCashTransfer(Account* destination, const CashDrawer& cashInserted) {
     if (!CheckSessionActive(ATMMode_Customer)) {
         return;
     }
 
-    std::cout << "Cash transfer feature not implemented yet.\n";
+    if (destination == nullptr) {
+        std::cout << "Destination account is invalid.\n";
+        return;
+    }
+
+    if (cashInserted.ItemCount() == 0) {
+        std::cout << "Please insert cash to transfer.\n";
+        return;
+    }
+
+    Bank* destinationBank = destination->getBank();
+    if (destinationBank == nullptr) {
+        std::cout << "Unable to locate the bank for the destination account.\n";
+        return;
+    }
+
+    long long totalCash = cashInserted.TotalValue();
+    long long fee = fees_.cashTransferAny;
+    long long transferAmount = totalCash - fee;
+    if (transferAmount <= 0) {
+        std::cout << "Inserted cash does not cover the transfer fee. Insert more cash.\n";
+        return;
+    }
+
+    if (!destinationBank->deposit(destination, transferAmount)) {
+        std::cout << "Cash transfer failed.\n";
+        return;
+    }
+
+    cashInventory_.Add(cashInserted);
+
+    SessionEvent event;
+    event.transactionType = ATMTransaction_CashTransfer;
+    event.amount = transferAmount;
+    event.feeCharged = fee;
+    event.sourceAccount.clear();
+    event.targetAccount = destination->getAccountNumber();
+    event.cashChange = cashInserted;
+    event.note = "Cash transfer completed";
+    if (fee > 0) {
+        event.note += " (fee inserted separately)";
+    }
+
+    RecordEvent(event);
+
+    const Card* card = sessionInfo_.card;
+    std::string cardNumber = card != nullptr ? card->getNumber() : "";
+    Transaction* transaction = new CashTransferTransaction(serialNumber_,
+                                                           cardNumber,
+                                                           destination->getBankName(),
+                                                           destination->getAccountNumber(),
+                                                           transferAmount,
+                                                           fee,
+                                                           event.note);
+    destinationBank->addTransaction(transaction);
+    destination->recordTransaction(transaction);
 }
 
 void ATM::ClearSession() {

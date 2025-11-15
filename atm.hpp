@@ -124,7 +124,7 @@ public:
     void RequestDeposit(const CashDrawer& cash, long long checkAmount);
     void RequestWithdrawal(long long amount);
     void RequestAccountTransfer(Account* destination, long long amount);
-    void RequestCashTransfer(long long amount);
+    void RequestCashTransfer(Account* destination, const CashDrawer& cashInserted);
     void CheckInsertedCard();
 
 private:
