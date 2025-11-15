@@ -1,17 +1,17 @@
 #include "Card.hpp"
 
-Card::Card(const CardNumber& card_num,
-           const BankName& card_bank,
+Card::Card(const std::string& card_num,
+           const std::string& card_bank,
            CardRole role_value)
     : cardNumber(card_num),
       bankName(card_bank),
       role(role_value) {}
 
-const CardNumber& Card::getNumber() const {
+const std::string& Card::getNumber() const {
     return cardNumber;
 }
 
-const BankName& Card::getBank() const {
+const std::string& Card::getBank() const {
     return bankName;
 }
 
