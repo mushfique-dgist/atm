@@ -13,28 +13,29 @@ public:
     Account(Bank* owningBank,
             const std::string& ownerName,
             const std::string& accountNumber,
-            double initialFunds,
+            long long initialFunds,
             Card* linkedCard,
-            int passwordHash);
+            const std::string& password);
 
     const std::string& getAccountNumber() const;
     const std::string& getOwnerName() const;
-    double getAvailableFunds() const;
+    long long getBalance() const;
     Card* getLinkedCard() const;
     Bank* getBank() const;
+    const std::string& getBankName() const;
 
-    void credit(double amount);
-    bool debit(double amount);
+    void deposit(long long amount);
+    bool withdraw(long long amount);
     void recordTransaction(Transaction* accountTransaction);
-    bool checkPassword(int hashedPassword) const;
+    bool checkPassword(const std::string& password) const;
 
 private:
     Bank* bank_;
     std::string ownerName_;
     std::string accountNumber_;
-    double availableFunds_;
+    long long balance_;
     Card* accountCard_;
-    int passwordHash_;
+    std::string password_;
     std::vector<Transaction*> transactionHistory_;
 };
 

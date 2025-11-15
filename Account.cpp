@@ -1,17 +1,19 @@
 #include "Account.hpp"
 
+#include "Bank.hpp"
+
 Account::Account(Bank* owningBank,
                  const std::string& ownerName,
                  const std::string& accountNumber,
-                 double initialFunds,
+                 long long initialFunds,
                  Card* linkedCard,
-                 int passwordHash)
+                 const std::string& password)
     : bank_(owningBank),
       ownerName_(ownerName),
       accountNumber_(accountNumber),
-      availableFunds_(initialFunds),
+      balance_(initialFunds >= 0 ? initialFunds : 0),
       accountCard_(linkedCard),
-      passwordHash_(passwordHash) {
+      password_(password) {
 }
 
 const std::string& Account::getAccountNumber() const {
@@ -22,8 +24,8 @@ const std::string& Account::getOwnerName() const {
     return ownerName_;
 }
 
-double Account::getAvailableFunds() const {
-    return availableFunds_;
+long long Account::getBalance() const {
+    return balance_;
 }
 
 Card* Account::getLinkedCard() const {
@@ -34,29 +36,38 @@ Bank* Account::getBank() const {
     return bank_;
 }
 
-void Account::credit(double amount) {
-    if (amount > 0) {
-        availableFunds_ += amount;
+const std::string& Account::getBankName() const {
+    if (bank_ != nullptr) {
+        return bank_->getBankName();
     }
+    static const std::string emptyName;
+    return emptyName;
 }
 
-bool Account::debit(double amount) {
+void Account::deposit(long long amount) {
+    if (amount <= 0) {
+        return;
+    }
+    balance_ += amount;
+}
+
+bool Account::withdraw(long long amount) {
     if (amount <= 0) {
         return false;
     }
-    if (amount > availableFunds_) {
+    if (amount > balance_) {
         return false;
     }
-    availableFunds_ -= amount;
+    balance_ -= amount;
     return true;
 }
 
 void Account::recordTransaction(Transaction* accountTransaction) {
-    if (accountTransaction != NULL) {
+    if (accountTransaction != nullptr) {
         transactionHistory_.push_back(accountTransaction);
     }
 }
 
-bool Account::checkPassword(int hashedPassword) const {
-    return passwordHash_ == hashedPassword;
+bool Account::checkPassword(const std::string& enteredPassword) const {
+    return password_ == enteredPassword;
 }
