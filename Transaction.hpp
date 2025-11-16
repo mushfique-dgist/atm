@@ -1,7 +1,7 @@
 #ifndef TRANSACTION_HPP
 #define TRANSACTION_HPP
 
-#include <ostream>
+#include <iostream>
 #include <string>
 
 // Base class that records common transaction information.
