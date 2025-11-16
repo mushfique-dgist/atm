@@ -1,6 +1,5 @@
 #include "Atm.hpp"
 
-#include <algorithm>
 #include <iostream>
 
 #include "Account.hpp"
@@ -21,7 +20,11 @@ bool BuildWithdrawalBundle(long long amount, const CashDrawer& inventory, CashDr
         if (needed <= 0) {
             continue;
         }
-        int usable = static_cast<int>(std::min<long long>(needed, inventory.noteCounts[i]));
+        long long inStock = inventory.noteCounts[i];
+        if (inStock > needed) {
+            inStock = needed;
+        }
+        int usable = static_cast<int>(inStock);
         bundle.noteCounts[i] = usable;
         remaining -= static_cast<long long>(usable) * billValue;
     }
@@ -245,7 +248,7 @@ void ATM::StartCustomerSession(const Card* card, Account* account, bool primaryB
     }
 }
 
-void ATM::StartAdminSession(const AdminCard* card) {
+void ATM::StartAdminSession(const Card* card) {
     if (sessionActive_) {
         std::cout << "A session is already running.\n";
         return;
@@ -288,6 +291,7 @@ void ATM::RecordEvent(const SessionEvent& event) {
 
     if (sessionInfo_.recordCount >= MAX_SESSION_EVENTS) {
         std::cout << "Session log is full. Event not recorded.\n";
+        EndSession();
         return;
     }
 
@@ -340,31 +344,36 @@ void ATM::PrintReceipt(std::ostream& out) const {
     }
 }
 
-void ATM::RequestDeposit(const CashDrawer& cash, long long checkAmount) {
+void ATM::RequestDeposit(const CashDrawer& cash, long long checkAmount, const CashDrawer& feeCash, int checkCount) {
     if (!CheckSessionActive(ATMMode_Customer)) {
         return;
     }
 
-    if (cash.ItemCount() > MAX_INSERT_ITEMS) {
+    int totalItems = cash.ItemCount() + checkCount;
+    if (totalItems > MAX_INSERT_ITEMS) {
         std::cout << "Deposit exceeds the 50 item limit.\n";
+        EndSession();
         return;
     }
 
     Account* account = sessionInfo_.primaryAccount;
     if (account == nullptr) {
         std::cout << "No account is linked to this session.\n";
+        EndSession();
         return;
     }
 
     Bank* accountBank = account->getBank();
     if (accountBank == nullptr) {
         std::cout << "Unable to locate the bank for this account.\n";
+        EndSession();
         return;
     }
 
     long long depositAmount = cash.TotalValue() + checkAmount;
     if (depositAmount <= 0) {
         std::cout << "Deposit amount must be positive.\n";
+        EndSession();
         return;
     }
 
@@ -373,8 +382,16 @@ void ATM::RequestDeposit(const CashDrawer& cash, long long checkAmount) {
     event.amount = depositAmount;
     event.feeCharged = sessionInfo_.isPrimaryBankCard ? fees_.depositPrimary : fees_.depositNonPrimary;
 
+    long long feeCashValue = feeCash.TotalValue();
+    if (event.feeCharged > feeCashValue) {
+        std::cout << "Not enough cash was provided for the fee. Please insert additional fee cash.\n";
+        EndSession();
+        return;
+    }
+
     if (!accountBank->deposit(account, depositAmount)) {
         std::cout << "Deposit failed.\n";
+        EndSession();
         return;
     }
 
@@ -386,6 +403,9 @@ void ATM::RequestDeposit(const CashDrawer& cash, long long checkAmount) {
     event.cashChange = addedCash;
     event.sourceAccount.clear();
     event.targetAccount = account->getAccountNumber();
+    if (feeCash.ItemCount() > 0) {
+        cashInventory_.Add(feeCash);
+    }
 
     if (checkAmount > 0) {
         event.note = "Check deposit completed";
@@ -418,39 +438,46 @@ void ATM::RequestWithdrawal(long long amount) {
 
     if (sessionInfo_.withdrawalCount >= 3) {
         std::cout << "You reached the maximum of 3 withdrawals this session.\n";
+        EndSession();
         return;
     }
 
     if (amount <= 0 || amount % 1000 != 0) {
         std::cout << "Enter an amount that is a positive multiple of 1,000.\n";
+        EndSession();
         return;
     }
 
     if (amount > 500000) {
         std::cout << "Maximum withdrawal per transaction is 500,000.\n";
+        EndSession();
         return;
     }
 
     CashDrawer bundle;
     if (!BuildWithdrawalBundle(amount, cashInventory_, bundle)) {
         std::cout << "ATM does not have the right bills for that amount.\n";
+        EndSession();
         return;
     }
 
     if (!cashInventory_.HasEnoughBills(bundle)) {
         std::cout << "ATM is out of cash for that request.\n";
+        EndSession();
         return;
     }
 
     Account* account = sessionInfo_.primaryAccount;
     if (account == nullptr) {
         std::cout << "No account is linked to this session.\n";
+        EndSession();
         return;
     }
 
     Bank* accountBank = account->getBank();
     if (accountBank == nullptr) {
         std::cout << "Unable to locate the bank for this account.\n";
+        EndSession();
         return;
     }
 
@@ -463,6 +490,7 @@ void ATM::RequestWithdrawal(long long amount) {
     long long totalCost = amount + event.feeCharged;
     if (!accountBank->withdraw(account, totalCost)) {
         std::cout << "Insufficient funds in the account.\n";
+        EndSession();
         return;
     }
 
@@ -517,22 +545,26 @@ void ATM::RequestAccountTransfer(Account* destination, long long amount) {
 
     if (destination == nullptr) {
         std::cout << "Destination account is invalid.\n";
+        EndSession();
         return;
     }
 
     Account* source = sessionInfo_.primaryAccount;
     if (source == nullptr) {
         std::cout << "No source account is linked to this session.\n";
+        EndSession();
         return;
     }
 
     if (source == destination) {
         std::cout << "Cannot transfer to the same account.\n";
+        EndSession();
         return;
     }
 
     if (amount <= 0) {
         std::cout << "Transfer amount must be positive.\n";
+        EndSession();
         return;
     }
 
@@ -540,12 +572,14 @@ void ATM::RequestAccountTransfer(Account* destination, long long amount) {
     Bank* destinationBank = destination->getBank();
     if (sourceBank == nullptr || destinationBank == nullptr) {
         std::cout << "Unable to locate the banks for the accounts.\n";
+        EndSession();
         return;
     }
 
     long long fee = DetermineTransferFee(primaryBank_, sourceBank, destinationBank, fees_);
     if (!sourceBank->transfer(source, destination, amount, fee)) {
         std::cout << "Transfer failed due to insufficient funds or invalid accounts.\n";
+        EndSession();
         return;
     }
 
@@ -585,17 +619,20 @@ void ATM::RequestCashTransfer(Account* destination, const CashDrawer& cashInsert
 
     if (destination == nullptr) {
         std::cout << "Destination account is invalid.\n";
+        EndSession();
         return;
     }
 
     if (cashInserted.ItemCount() == 0) {
         std::cout << "Please insert cash to transfer.\n";
+        EndSession();
         return;
     }
 
     Bank* destinationBank = destination->getBank();
     if (destinationBank == nullptr) {
         std::cout << "Unable to locate the bank for the destination account.\n";
+        EndSession();
         return;
     }
 
@@ -604,11 +641,13 @@ void ATM::RequestCashTransfer(Account* destination, const CashDrawer& cashInsert
     long long transferAmount = totalCash - fee;
     if (transferAmount <= 0) {
         std::cout << "Inserted cash does not cover the transfer fee. Insert more cash.\n";
+        EndSession();
         return;
     }
 
     if (!destinationBank->deposit(destination, transferAmount)) {
         std::cout << "Cash transfer failed.\n";
+        EndSession();
         return;
     }
 

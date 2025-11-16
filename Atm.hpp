@@ -1,11 +1,10 @@
 #ifndef ATM_HPP
 #define ATM_HPP
 
-#include <ostream>
+#include <iostream>
 #include <string>
 
 class Account;
-class AdminCard;
 class Bank;
 class Card;
 
@@ -77,7 +76,7 @@ struct SessionEvent {
 struct SessionState {
     ATMMode mode;
     const Card* card;
-    const AdminCard* adminCard;
+    const Card* adminCard;
     Account* primaryAccount;
     bool isPrimaryBankCard;
     SessionEvent records[MAX_SESSION_EVENTS];
@@ -112,7 +111,7 @@ public:
     bool TryGiveCash(const CashDrawer& cash);
 
     void StartCustomerSession(const Card* card, Account* account, bool primaryBankCard);
-    void StartAdminSession(const AdminCard* card);
+    void StartAdminSession(const Card* card);
     void EndSession();
     bool HasActiveSession() const;
     ATMMode GetActiveMode() const;
@@ -121,7 +120,7 @@ public:
     void RecordEvent(const SessionEvent& event);
     void PrintReceipt(std::ostream& out) const;
 
-    void RequestDeposit(const CashDrawer& cash, long long checkAmount);
+    void RequestDeposit(const CashDrawer& cash, long long checkAmount, const CashDrawer& feeCash, int checkCount);
     void RequestWithdrawal(long long amount);
     void RequestAccountTransfer(Account* destination, long long amount);
     void RequestCashTransfer(Account* destination, const CashDrawer& cashInserted);
