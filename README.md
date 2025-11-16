@@ -1,3 +1,19 @@
+#### Build & Run Instructions
+
+- From the project directory, run using the following command
+
+```bash
+# build
+g++ -std=c++14 main.cpp Atm.cpp Bank.cpp Account.cpp Card.cpp Transaction.cpp -o main.exe
+```
+
+- From the project directory, run using the following command
+
+```bash
+# run
+.\main.exe
+```
+
 # ATM Term Project
 
 This repository is the starting point for the Fall 2025 CSE201 term project. We are kicking off the work on a console based ATM simulator that must satisfy the full requirement list from the official project brief. Nothing here is final yet—this document captures how we plan to organise the effort and what is currently in the repository.
