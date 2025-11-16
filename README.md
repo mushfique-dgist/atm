@@ -1,6 +1,6 @@
 #### Build & Run Instructions
 
-- From the project directory, run using the following command
+- From the project directory, build using the following command
 
 ```bash
 # build
