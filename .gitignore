@@ -15,9 +15,11 @@ Bank-cpp.txt
 ATM-hpp.txt
 ATM-cpp.txt
 main-cpp.txt
-PROJECT_TASKLIST.txt
-Guidelines.txt
+PROJECT_TASKLIST.md
+Guidelines.md
 Transaction-hpp.txt
 Transaction-cpp.txt
-project-req.txt
+project-req.md
 ATM_Going_crazy-main
+course-teachings-code
+course-content/
