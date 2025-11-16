@@ -1,7 +1,6 @@
 #ifndef BANK_HPP
 #define BANK_HPP
 
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -15,6 +14,8 @@ public:
          const std::string& bankId,
          std::vector<Bank*>* allBanks,
          std::vector<Transaction*>* transactions);
+
+    ~Bank();
 
     const std::string& getBankName() const;
     const std::string& getBankID() const;
@@ -53,7 +54,7 @@ private:
     std::vector<Card*> cards_;       // Non-owning pointers; cards are owned by their account or adminCard_.
     std::vector<Bank*>* allBanks_;
     std::vector<Transaction*>* transactions_;
-    std::unique_ptr<Card> adminCard_;
+    Card* adminCard_;
     std::string adminPassword_;
 };
 

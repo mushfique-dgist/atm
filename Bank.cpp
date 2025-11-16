@@ -1,7 +1,5 @@
 #include "Bank.hpp"
 
-#include <algorithm>
-
 #include "Account.hpp"
 #include "Card.hpp"
 #include "Transaction.hpp"
@@ -16,8 +14,15 @@ Bank::Bank(const std::string& bankName,
       cards_(),
       allBanks_(allBanks),
       transactions_(transactions),
-      adminCard_(nullptr),
+      adminCard_(0),
       adminPassword_() {
+}
+
+Bank::~Bank() {
+    if (adminCard_ != 0) {
+        delete adminCard_;
+        adminCard_ = 0;
+    }
 }
 
 const std::string& Bank::getBankName() const {
@@ -55,8 +60,14 @@ void Bank::addAccount(Account* account) {
         return;
     }
 
-    auto alreadyStored = std::find(cards_.begin(), cards_.end(), linkedCard);
-    if (alreadyStored == cards_.end()) {
+    bool found = false;
+    for (std::size_t i = 0; i < cards_.size(); ++i) {
+        if (cards_[i] == linkedCard) {
+            found = true;
+            break;
+        }
+    }
+    if (!found) {
         cards_.push_back(linkedCard);
     }
 }
@@ -88,13 +99,19 @@ void Bank::setAdminCard(const std::string& cardNumber, const std::string& passwo
         return;
     }
 
-    if (adminCard_ != nullptr) {
-        auto removeIt = std::remove(cards_.begin(), cards_.end(), adminCard_.get());
-        cards_.erase(removeIt, cards_.end());
+    if (adminCard_ != 0) {
+        for (std::size_t i = 0; i < cards_.size(); ++i) {
+            if (cards_[i] == adminCard_) {
+                cards_.erase(cards_.begin() + static_cast<long>(i));
+                break;
+            }
+        }
+        delete adminCard_;
+        adminCard_ = 0;
     }
 
-    adminCard_ = std::make_unique<Card>(cardNumber, bankName_, CardRole::Admin);
-    cards_.push_back(adminCard_.get());
+    adminCard_ = new Card(cardNumber, bankName_, CardRole::Admin);
+    cards_.push_back(adminCard_);
     adminPassword_ = password;
 }
 
@@ -114,7 +131,7 @@ bool Bank::verifyUserCredentials(const std::string& cardNumber,
 
 bool Bank::verifyAdminCredentials(const std::string& cardNumber,
                                   const std::string& password) const {
-    if (adminCard_ == nullptr) {
+    if (adminCard_ == 0) {
         return false;
     }
     return adminCard_->getNumber() == cardNumber && adminPassword_ == password;
