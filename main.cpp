@@ -1,9 +1,6 @@
 #include <fstream>
 #include <iostream>
-#include <limits>
-#include <memory>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 #include "Account.hpp"
@@ -18,15 +15,13 @@ struct SystemState {
     std::vector<Card*> cards;
     std::vector<ATM*> atms;
     std::vector<Transaction*> transactions;
-    std::unordered_map<std::string, Account*> accountByNumber;
-    std::unordered_map<std::string, Account*> accountByCard;
 };
 
 namespace {
 
 void ClearInputLine() {
     std::cin.clear();
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    std::cin.ignore(100000, '\n');
 }
 
 int PromptInt(const std::string& message, int minValue) {
@@ -67,6 +62,48 @@ Bank* FindBank(const std::vector<Bank*>& banks, const std::string& name) {
         }
     }
     return nullptr;
+}
+
+Account* FindAccountByCard(const std::vector<Account*>& accounts, const std::string& cardNumber) {
+    for (std::size_t i = 0; i < accounts.size(); ++i) {
+        Account* account = accounts[i];
+        if (account == nullptr) {
+            continue;
+        }
+        Card* linkedCard = account->getLinkedCard();
+        if (linkedCard != nullptr && linkedCard->getNumber() == cardNumber) {
+            return account;
+        }
+    }
+    return nullptr;
+}
+
+Account* FindAccountByNumber(const std::vector<Account*>& accounts, const std::string& accountNumber) {
+    for (std::size_t i = 0; i < accounts.size(); ++i) {
+        Account* account = accounts[i];
+        if (account != nullptr && account->getAccountNumber() == accountNumber) {
+            return account;
+        }
+    }
+    return nullptr;
+}
+
+long long PromptCheckAmounts(int& checkCount) {
+    long long total = 0;
+    checkCount = 0;
+    while (true) {
+        long long amount = PromptLongLong("Enter check amount (0 to finish): ", 0);
+        if (amount == 0) {
+            break;
+        }
+        if (amount < 100000) {
+            std::cout << "Each check must be at least 100,000 KRW.\n";
+            continue;
+        }
+        total += amount;
+        ++checkCount;
+    }
+    return total;
 }
 
 CashDrawer PromptCashDrawer(const std::string& label) {
@@ -176,8 +213,6 @@ bool LoadInitialData(const std::string& filename, SystemState& state) {
 
         state.cards.push_back(card);
         state.accounts.push_back(account);
-        state.accountByCard[cardNumber] = account;
-        state.accountByNumber[accountNumber] = account;
         bank->addAccount(account);
     }
 
@@ -272,9 +307,7 @@ void RunAdminMenu(const std::vector<Transaction*>& transactions) {
     }
 }
 
-void RunAtmMenu(ATM* atm,
-                const std::vector<Bank*>& banks,
-                const std::unordered_map<std::string, Account*>& accountByNumber) {
+void RunAtmMenu(ATM* atm, const std::vector<Account*>& accounts) {
     if (atm == nullptr) {
         return;
     }
@@ -300,8 +333,10 @@ void RunAtmMenu(ATM* atm,
         switch (choice) {
         case 1: {
             CashDrawer cash = PromptCashDrawer("deposit");
-            long long checkAmount = PromptLongLong("Enter check amount (0 if none): ", 0);
-            atm->RequestDeposit(cash, checkAmount);
+            int checkCount = 0;
+            long long checkAmount = PromptCheckAmounts(checkCount);
+            CashDrawer feeCash = PromptCashDrawer("fee (cash only, enter 0 for no fee)");
+            atm->RequestDeposit(cash, checkAmount, feeCash, checkCount);
             break;
         }
         case 2: {
@@ -311,24 +346,24 @@ void RunAtmMenu(ATM* atm,
         }
         case 3: {
             std::string targetAccount = PromptString("Enter destination account number: ");
-            auto it = accountByNumber.find(targetAccount);
-            if (it == accountByNumber.end()) {
+            Account* destination = FindAccountByNumber(accounts, targetAccount);
+            if (destination == nullptr) {
                 std::cout << "Account not found.\n";
                 break;
             }
             long long amount = PromptLongLong("Enter transfer amount: ", 1);
-            atm->RequestAccountTransfer(it->second, amount);
+            atm->RequestAccountTransfer(destination, amount);
             break;
         }
         case 4: {
             std::string targetAccount = PromptString("Enter destination account number: ");
-            auto it = accountByNumber.find(targetAccount);
-            if (it == accountByNumber.end()) {
+            Account* destination = FindAccountByNumber(accounts, targetAccount);
+            if (destination == nullptr) {
                 std::cout << "Account not found.\n";
                 break;
             }
             CashDrawer cash = PromptCashDrawer("cash transfer");
-            atm->RequestCashTransfer(it->second, cash);
+            atm->RequestCashTransfer(destination, cash);
             break;
         }
         case 5:
@@ -336,6 +371,11 @@ void RunAtmMenu(ATM* atm,
             break;
         default:
             std::cout << "Unknown option.\n";
+            break;
+        }
+
+        if (!atm->HasActiveSession()) {
+            std::cout << "Session ended due to an error.\n";
             break;
         }
     }
@@ -421,13 +461,11 @@ void RunConsole(SystemState& state) {
             continue;
         }
 
-        auto accountIt = state.accountByCard.find(cardNumber);
-        if (accountIt == state.accountByCard.end()) {
+        Account* initialAccount = FindAccountByCard(state.accounts, cardNumber);
+        if (initialAccount == nullptr) {
             std::cout << "Card not recognized.\n";
             continue;
         }
-
-        Account* initialAccount = accountIt->second;
         Bank* bank = initialAccount->getBank();
         if (bank == nullptr) {
             std::cout << "Account is not associated with a bank.\n";
@@ -463,7 +501,7 @@ void RunConsole(SystemState& state) {
             continue;
         }
 
-        RunAtmMenu(atm, state.banks, state.accountByNumber);
+        RunAtmMenu(atm, state.accounts);
     }
 }
 
