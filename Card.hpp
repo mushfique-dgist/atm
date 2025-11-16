@@ -19,8 +19,8 @@ public:
          const std::string& card_bank,
          CardRole role_value = CardRole::User);
 
-    const std::string& getNumber() const { return cardNumber; }
-    const std::string& getBank() const { return bankName; }
+    const std::string& getNumber() const;
+    const std::string& getBank() const;
     CardRole getRole() const;
     bool isAdmin() const;
 };
