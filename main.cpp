@@ -127,32 +127,47 @@ CashDrawer PromptCashDrawer(const std::string& label) {
 
 void PrintSnapshot(const std::vector<Bank*>& banks, const std::vector<ATM*>& atms) {
     std::cout << "\n=== Snapshot ===\n";
-    std::cout << "Banks and accounts:\n";
-    for (const Bank* bank : banks) {
-        if (bank == nullptr) {
-            continue;
-        }
-        std::cout << "- Bank: " << bank->getBankName() << "\n";
-        for (Account* account : bank->getAccounts()) {
-            if (account == nullptr) {
-                continue;
-            }
-            std::cout << "    Account " << account->getAccountNumber()
-                      << " (Owner: " << account->getOwnerName()
-                      << ", Balance: " << account->getBalance() << ")\n";
-        }
-    }
 
-    std::cout << "\nATMs:\n";
+    std::cout << "ATMs (remaining cash):\n";
     for (const ATM* atm : atms) {
         if (atm == nullptr) {
             continue;
         }
-        std::cout << "- ATM Serial: " << atm->GetSerialNumber()
-                  << " (Primary Bank: "
-                  << (atm->GetPrimaryBank() ? atm->GetPrimaryBank()->getBankName() : "Unknown")
-                  << ")\n";
+        const Bank* primaryBank = atm->GetPrimaryBank();
+        std::string bankName = primaryBank ? primaryBank->getBankName() : "Unknown";
+        const CashDrawer& drawer = atm->GetCashInventory();
+        long long totalCash = drawer.TotalValue();
+
+        int count1k = drawer.noteCounts[0];
+        int count5k = drawer.noteCounts[1];
+        int count10k = drawer.noteCounts[2];
+        int count50k = drawer.noteCounts[3];
+
+        std::cout << bankName << " ATM [SN:" << atm->GetSerialNumber() << "] "
+                  << "Remaining cash: " << totalCash
+                  << " | Left cash: "
+                  << count1k << " x 1,000 won, "
+                  << count5k << " x 5,000 won, "
+                  << count10k << " x 10,000 won, "
+                  << count50k << " x 50,000 won\n";
     }
+
+    std::cout << "\nAccounts (remaining balance):\n";
+    for (const Bank* bank : banks) {
+        if (bank == nullptr) {
+            continue;
+        }
+        for (Account* account : bank->getAccounts()) {
+            if (account == nullptr) {
+                continue;
+            }
+            std::cout << "Account [Bank: " << bank->getBankName()
+                      << ", No. " << account->getAccountNumber()
+                      << ", Owner: " << account->getOwnerName()
+                      << "] Balance : " << account->getBalance() << "\n";
+        }
+    }
+
     std::cout << "================\n";
 }
 
@@ -392,7 +407,35 @@ void RunConsole(SystemState& state) {
         std::cout << "1) Use an ATM\n";
         std::cout << "2) Show snapshot\n";
         std::cout << "0) Exit\n";
-        int choice = PromptInt("Select an option: ", 0);
+        std::cout << "(You can also type '/' at this menu to show the snapshot.)\n";
+        std::string choiceInput = PromptString("Select an option: ");
+
+        if (choiceInput == "/") {
+            PrintSnapshot(state.banks, state.atms);
+            continue;
+        }
+
+        int choice = 0;
+        {
+            bool parsed = false;
+            if (!choiceInput.empty()) {
+                bool isNumber = true;
+                for (std::size_t i = 0; i < choiceInput.size(); ++i) {
+                    if (choiceInput[i] < '0' || choiceInput[i] > '9') {
+                        isNumber = false;
+                        break;
+                    }
+                }
+                if (isNumber) {
+                    choice = static_cast<int>(std::stoi(choiceInput));
+                    parsed = true;
+                }
+            }
+            if (!parsed) {
+                std::cout << "Invalid input. Try again.\n";
+                continue;
+            }
+        }
 
         if (choice == 0) {
             std::cout << "Goodbye!\n";
