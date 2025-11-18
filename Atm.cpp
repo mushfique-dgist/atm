@@ -383,8 +383,8 @@ void ATM::RequestDeposit(const CashDrawer& cash, long long checkAmount, const Ca
     event.feeCharged = sessionInfo_.isPrimaryBankCard ? fees_.depositPrimary : fees_.depositNonPrimary;
 
     long long feeCashValue = feeCash.TotalValue();
-    if (event.feeCharged > feeCashValue) {
-        std::cout << "Not enough cash was provided for the fee. Please insert additional fee cash.\n";
+    if (feeCashValue != event.feeCharged) {
+        std::cout << "Fee cash must match the exact fee amount.\n";
         EndSession();
         return;
     }
