@@ -100,6 +100,8 @@ class CashTransferTransaction : public Transaction {
 public:
     CashTransferTransaction(const std::string& atmSerial,
                             const std::string& cardNumber,
+                            const std::string& sourceBankName,
+                            const std::string& sourceAccountNumber,
                             const std::string& targetBankName,
                             const std::string& targetAccountNumber,
                             long long amount,
