@@ -390,7 +390,6 @@ void ATM::RequestDeposit(const CashDrawer& cash, long long checkAmount, const Ca
     long long depositAmount = cash.TotalValue() + checkAmount;
     if (depositAmount <= 0) {
         std::cout << "Deposit amount must be positive.\n";
-        EndSession();
         return;
     }
 
