@@ -505,6 +505,7 @@ void RunConsole(SystemState& state) {
                 continue;
             }
 
+            atm->StartAdminSession(nullptr);
             bool authenticated = false;
             int attempts = 0;
             while (attempts < 3 && !authenticated) {
@@ -520,10 +521,12 @@ void RunConsole(SystemState& state) {
 
             if (!authenticated) {
                 std::cout << "Admin authentication failed. Returning to main menu.\n";
+                atm->EndSession();
                 continue;
             }
 
             RunAdminMenu(state.transactions);
+            atm->EndSession();
             continue;
         }
 
@@ -535,16 +538,27 @@ void RunConsole(SystemState& state) {
         Account* initialAccount = FindAccountByCard(state.accounts, cardNumber);
         if (initialAccount == nullptr) {
             std::cout << "Card not recognized.\n";
+            atm->StartCustomerSession(nullptr, nullptr, false);
             continue;
         }
         Bank* bank = initialAccount->getBank();
         if (bank == nullptr) {
+            atm->StartCustomerSession(initialAccount->getLinkedCard(), initialAccount, false);
             std::cout << "Account is not associated with a bank.\n";
+            atm->EndSession();
             continue;
         }
 
         if (!atm->SupportsBank(bank)) {
+            atm->StartCustomerSession(initialAccount->getLinkedCard(), initialAccount, false);
             std::cout << "This ATM does not support the selected bank/card.\n";
+            atm->EndSession();
+            continue;
+        }
+
+        bool isPrimary = (atm->GetPrimaryBank() == bank);
+        atm->StartCustomerSession(initialAccount->getLinkedCard(), initialAccount, isPrimary);
+        if (!atm->HasActiveSession()) {
             continue;
         }
 
@@ -563,12 +577,7 @@ void RunConsole(SystemState& state) {
 
         if (verifiedAccount == nullptr) {
             std::cout << "Too many wrong password attempts. Session aborted.\n";
-            continue;
-        }
-
-        bool isPrimary = (atm->GetPrimaryBank() == bank);
-        atm->StartCustomerSession(verifiedAccount->getLinkedCard(), verifiedAccount, isPrimary);
-        if (!atm->HasActiveSession()) {
+            atm->EndSession();
             continue;
         }
 
