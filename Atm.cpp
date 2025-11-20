@@ -652,6 +652,13 @@ void ATM::RequestCashTransfer(Account* destination, const CashDrawer& cashInsert
         return;
     }
 
+    Account* source = sessionInfo_.primaryAccount;
+    if (source == nullptr) {
+        std::cout << "No source account is linked to this session.\n";
+        EndSession();
+        return;
+    }
+
     if (destination == nullptr) {
         std::cout << "Destination account is invalid.\n";
         EndSession();
@@ -697,7 +704,7 @@ void ATM::RequestCashTransfer(Account* destination, const CashDrawer& cashInsert
     event.transactionType = ATMTransaction_CashTransfer;
     event.amount = transferAmount;
     event.feeCharged = fee;
-    event.sourceAccount.clear();
+    event.sourceAccount = source->getAccountNumber();
     event.targetAccount = destination->getAccountNumber();
     event.cashChange = cashInserted;
     event.note = "Cash transfer completed";
@@ -711,6 +718,8 @@ void ATM::RequestCashTransfer(Account* destination, const CashDrawer& cashInsert
     std::string cardNumber = card != nullptr ? card->getNumber() : "";
     Transaction* transaction = new CashTransferTransaction(serialNumber_,
                                                            cardNumber,
+                                                           source->getBankName(),
+                                                           source->getAccountNumber(),
                                                            destination->getBankName(),
                                                            destination->getAccountNumber(),
                                                            transferAmount,
