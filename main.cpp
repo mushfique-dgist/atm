@@ -55,6 +55,26 @@ std::string PromptString(const std::string& message) {
     return input;
 }
 
+void PrintWelcomeBanner() {
+    std::cout << "========================================\n";
+    std::cout << "         DGIST ATM SIMULATOR            \n";
+    std::cout << "========================================\n";
+    std::cout << "Load sample_initial_condition.txt, then\n";
+    std::cout << "enter admin cards/PINs for each bank.\n";
+    std::cout << "----------------------------------------\n\n";
+}
+
+void PrintMainMenu() {
+    std::cout << "\n========================================\n";
+    std::cout << "              MAIN MENU                 \n";
+    std::cout << "========================================\n";
+    std::cout << "  [1] Use an ATM\n";
+    std::cout << "  [2] Show snapshot\n";
+    std::cout << "  [0] Exit\n";
+    std::cout << "  [/] Quick snapshot\n";
+    std::cout << "========================================\n";
+}
+
 Bank* FindBank(const std::vector<Bank*>& banks, const std::string& name) {
     for (Bank* bank : banks) {
         if (bank != nullptr && bank->getBankName() == name) {
@@ -281,8 +301,8 @@ void ConfigureAdminCards(SystemState& state) {
             continue;
         }
         std::cout << "Configuring admin card for bank: " << bank->getBankName() << "\n";
-        std::string adminCardNumber = PromptString("  Enter admin card number: ");
-        std::string adminPassword = PromptString("  Enter admin password/PIN: ");
+        std::string adminCardNumber = PromptString("  Enter a unique admin card number: ");
+        std::string adminPassword = PromptString("  Enter a unique admin password/PIN: ");
         bank->setAdminCard(adminCardNumber, adminPassword);
     }
     std::cout << "========================\n";
@@ -290,10 +310,13 @@ void ConfigureAdminCards(SystemState& state) {
 
 void RunAdminMenu(const std::vector<Transaction*>& transactions) {
     while (true) {
-        std::cout << "\nAdmin Menu\n";
-        std::cout << "1) Print all transactions\n";
-        std::cout << "2) Export transactions to file\n";
-        std::cout << "0) Exit admin menu\n";
+        std::cout << "\n========================================\n";
+        std::cout << "              ADMIN MENU                \n";
+        std::cout << "========================================\n";
+        std::cout << "  [1] Print all transactions\n";
+        std::cout << "  [2] Export transactions to file\n";
+        std::cout << "  [0] Exit admin menu\n";
+        std::cout << "========================================\n";
         int choice = PromptInt("Select an option: ", 0);
 
         if (choice == 0) {
@@ -328,17 +351,19 @@ void RunAtmMenu(ATM* atm, const std::vector<Account*>& accounts) {
     }
 
     while (true) {
-        std::cout << "\nATM Menu (Serial " << atm->GetSerialNumber() << ")\n";
-        std::cout << "1) Deposit\n";
-        std::cout << "2) Withdraw\n";
-        std::cout << "3) Account transfer\n";
-        std::cout << "4) Cash transfer\n";
-        std::cout << "5) Print receipt\n";
-        std::cout << "0) End session\n";
+        std::cout << "\n========================================\n";
+        std::cout << "          ATM MENU - Serial " << atm->GetSerialNumber() << "         \n";
+        std::cout << "========================================\n";
+        std::cout << "  [1] Deposit\n";
+        std::cout << "  [2] Withdraw\n";
+        std::cout << "  [3] Account transfer\n";
+        std::cout << "  [4] Cash transfer\n";
+        std::cout << "  [5] Print receipt\n";
+        std::cout << "  [0] End session\n";
+        std::cout << "========================================\n";
         int choice = PromptInt("Select an option: ", 0);
 
         if (choice == 0) {
-            std::cout << "\nSession summary:\n";
             atm->PrintReceipt(std::cout);
             std::cout << "Session ended.\n";
             atm->EndSession();
@@ -350,7 +375,14 @@ void RunAtmMenu(ATM* atm, const std::vector<Account*>& accounts) {
             CashDrawer cash = PromptCashDrawer("deposit");
             int checkCount = 0;
             long long checkAmount = PromptCheckAmounts(checkCount);
-            CashDrawer feeCash = PromptCashDrawer("fee (cash only, enter 0 for no fee)");
+            long long depositFee = atm->GetDepositFeeForCurrentSession();
+            std::string feeLabel;
+            if (depositFee == 0) {
+                feeLabel = "fee (no fee required; enter 0)";
+            } else {
+                feeLabel = "fee (insert exact " + std::to_string(depositFee) + ")";
+            }
+            CashDrawer feeCash = PromptCashDrawer(feeLabel);
             atm->RequestDeposit(cash, checkAmount, feeCash, checkCount);
             break;
         }
@@ -403,11 +435,7 @@ void RunConsole(SystemState& state) {
     }
 
     while (true) {
-        std::cout << "\n=== Main Menu ===\n";
-        std::cout << "1) Use an ATM\n";
-        std::cout << "2) Show snapshot\n";
-        std::cout << "0) Exit\n";
-        std::cout << "(You can also type '/' at this menu to show the snapshot.)\n";
+        PrintMainMenu();
         std::string choiceInput = PromptString("Select an option: ");
 
         if (choiceInput == "/") {
@@ -583,6 +611,7 @@ int main() {
         return 1;
     }
 
+    PrintWelcomeBanner();
     ConfigureAdminCards(state);
     RunConsole(state);
     Cleanup(state);
