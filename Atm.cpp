@@ -284,6 +284,13 @@ const SessionState& ATM::GetSessionState() const {
     return sessionInfo_;
 }
 
+long long ATM::GetDepositFeeForCurrentSession() const {
+    if (!sessionActive_ || sessionInfo_.mode != ATMMode_Customer) {
+        return 0;
+    }
+    return sessionInfo_.isPrimaryBankCard ? fees_.depositPrimary : fees_.depositNonPrimary;
+}
+
 void ATM::RecordEvent(const SessionEvent& event) {
     if (!CheckSessionActive(ATMMode_Customer)) {
         return;
@@ -305,43 +312,53 @@ void ATM::PrintReceipt(std::ostream& out) const {
         return;
     }
 
-    out << "ATM Serial: " << serialNumber_ << "\n";
-    out << "Session Mode: " << (sessionInfo_.mode == ATMMode_Admin ? "Admin" : "Customer") << "\n";
-    out << "Total Transactions: " << sessionInfo_.recordCount << "\n";
+    out << "\n========================================\n";
+    out << "           SESSION SUMMARY              \n";
+    out << "========================================\n";
+    out << "  ATM Serial : " << serialNumber_ << "\n";
+    out << "  Mode       : " << (sessionInfo_.mode == ATMMode_Admin ? "Admin" : "Customer") << "\n";
+    out << "  Transactions: " << sessionInfo_.recordCount << "\n";
+    out << "----------------------------------------\n";
 
-    for (int i = 0; i < sessionInfo_.recordCount; ++i) {
-        const SessionEvent& entry = sessionInfo_.records[i];
-        out << "  ";
-        switch (entry.transactionType) {
-        case ATMTransaction_Deposit:
-            out << "Deposit";
-            break;
-        case ATMTransaction_Withdrawal:
-            out << "Withdrawal";
-            break;
-        case ATMTransaction_AccountTransfer:
-            out << "Account Transfer";
-            break;
-        case ATMTransaction_CashTransfer:
-            out << "Cash Transfer";
-            break;
-        default:
-            out << "Unknown";
-            break;
+    if (sessionInfo_.recordCount == 0) {
+        out << "  No transactions were recorded.\n";
+    } else {
+        for (int i = 0; i < sessionInfo_.recordCount; ++i) {
+            const SessionEvent& entry = sessionInfo_.records[i];
+            out << "  #" << (i + 1) << " - ";
+            switch (entry.transactionType) {
+            case ATMTransaction_Deposit:
+                out << "Deposit";
+                break;
+            case ATMTransaction_Withdrawal:
+                out << "Withdrawal";
+                break;
+            case ATMTransaction_AccountTransfer:
+                out << "Account Transfer";
+                break;
+            case ATMTransaction_CashTransfer:
+                out << "Cash Transfer";
+                break;
+            default:
+                out << "Unknown";
+                break;
+            }
+            out << "\n";
+            out << "    Amount : " << entry.amount << "\n";
+            out << "    Fee    : " << entry.feeCharged << "\n";
+            if (!entry.sourceAccount.empty()) {
+                out << "    From   : " << entry.sourceAccount << "\n";
+            }
+            if (!entry.targetAccount.empty()) {
+                out << "    To     : " << entry.targetAccount << "\n";
+            }
+            if (!entry.note.empty()) {
+                out << "    Note   : " << entry.note << "\n";
+            }
+            out << "----------------------------------------\n";
         }
-        out << " amount=" << entry.amount;
-        out << " fee=" << entry.feeCharged;
-        if (!entry.sourceAccount.empty()) {
-            out << " from " << entry.sourceAccount;
-        }
-        if (!entry.targetAccount.empty()) {
-            out << " to " << entry.targetAccount;
-        }
-        if (!entry.note.empty()) {
-            out << " (" << entry.note << ")";
-        }
-        out << "\n";
     }
+    out << "========================================\n";
 }
 
 void ATM::RequestDeposit(const CashDrawer& cash, long long checkAmount, const CashDrawer& feeCash, int checkCount) {
@@ -388,12 +405,20 @@ void ATM::RequestDeposit(const CashDrawer& cash, long long checkAmount, const Ca
         EndSession();
         return;
     }
+    if (event.feeCharged > 0) {
+        std::cout << "Fee cash accepted.\n";
+    }
 
     if (!accountBank->deposit(account, depositAmount)) {
         std::cout << "Deposit failed.\n";
         EndSession();
         return;
     }
+    std::cout << "Deposit completed";
+    if (event.feeCharged > 0) {
+        std::cout << " (fee " << event.feeCharged << " inserted separately)";
+    }
+    std::cout << ".\n";
 
     CashDrawer addedCash;
     if (cash.ItemCount() > 0) {
@@ -495,6 +520,11 @@ void ATM::RequestWithdrawal(long long amount) {
     }
 
     cashInventory_.Remove(bundle);
+    std::cout << "Withdrawal complete";
+    if (event.feeCharged > 0) {
+        std::cout << "; fee " << event.feeCharged << " deducted from account";
+    }
+    std::cout << ".\n";
     event.sourceAccount = account->getAccountNumber();
     event.targetAccount.clear();
     event.note = "Withdrawal completed";
@@ -582,6 +612,11 @@ void ATM::RequestAccountTransfer(Account* destination, long long amount) {
         EndSession();
         return;
     }
+    std::cout << "Account transfer complete";
+    if (fee > 0) {
+        std::cout << "; fee " << fee << " deducted from source account";
+    }
+    std::cout << ".\n";
 
     SessionEvent event;
     event.transactionType = ATMTransaction_AccountTransfer;
@@ -652,6 +687,11 @@ void ATM::RequestCashTransfer(Account* destination, const CashDrawer& cashInsert
     }
 
     cashInventory_.Add(cashInserted);
+    std::cout << "Cash transfer complete";
+    if (fee > 0) {
+        std::cout << "; fee " << fee << " inserted separately";
+    }
+    std::cout << ".\n";
 
     SessionEvent event;
     event.transactionType = ATMTransaction_CashTransfer;
