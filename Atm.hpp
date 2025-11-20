@@ -126,6 +126,9 @@ public:
     void RequestCashTransfer(Account* destination, const CashDrawer& cashInserted);
     void CheckInsertedCard();
 
+    // Helper to preview the deposit fee for the current customer session.
+    long long GetDepositFeeForCurrentSession() const;
+
 private:
     std::string serialNumber_;
     Bank* primaryBank_;
