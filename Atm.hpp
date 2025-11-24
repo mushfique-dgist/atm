@@ -3,10 +3,12 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
 
 class Account;
 class Bank;
 class Card;
+class Transaction;
 
 enum ATMMode {
     ATMMode_Idle,
@@ -145,6 +147,20 @@ private:
     void ClearSession();
 
     bool CheckSessionActive(ATMMode expectedMode) const;
+
+    std::vector<Transaction*> transactions_;
+    int totalSessions_;
+    int customerSessions_;
+    int adminSessions_;
+
+public:
+    void AddTransaction(Transaction* t);
+    const std::vector<Transaction*>& GetTransactions() const { return transactions_; }
+    void IncrementCustomerSession() { ++totalSessions_; ++customerSessions_; }
+    void IncrementAdminSession() { ++totalSessions_; ++adminSessions_; }
+    int GetTotalSessions() const { return totalSessions_; }
+    int GetCustomerSessions() const { return customerSessions_; }
+    int GetAdminSessions() const { return adminSessions_; }
 };
 
 #endif // ATM_HPP
