@@ -440,13 +440,14 @@ void ConfigureAdminCards(SystemState& state) {
     std::cout << "========================\n";
 }
 
-void RunAdminMenu(const std::vector<Transaction*>& transactions,
-                  int totalSessions,
-                  int customerSessions,
-                  int adminSessions,
+void RunAdminMenu(ATM* atm,
                   const std::vector<Bank*>& banks,
                   const std::vector<ATM*>& atms,
                   ATMLanguage lang) {
+    const std::vector<Transaction*>& transactions = atm->GetTransactions();
+    int totalSessions = atm->GetTotalSessions();
+    int customerSessions = atm->GetCustomerSessions();
+    int adminSessions = atm->GetAdminSessions();
     while (true) {
         std::cout << "\n========================================\n";
         std::cout << "              ADMIN MENU                \n";
@@ -489,7 +490,7 @@ void RunAdminMenu(const std::vector<Transaction*>& transactions,
 
         switch (choice) {
         case 1:
-            std::cout << T(lang, "Total sessions: ", "누적 세션 수: ")
+            std::cout << T(lang, "This ATM sessions: ", "이 ATM 세션 수: ")
                       << totalSessions
                       << T(lang, " (customer ", " (고객 ")
                       << customerSessions
@@ -504,7 +505,7 @@ void RunAdminMenu(const std::vector<Transaction*>& transactions,
                 std::cout << T(lang, "Failed to open file.\n", "파일을 열 수 없습니다.\n");
                 break;
             }
-            fout << T(lang, "Total sessions: ", "누적 세션 수: ")
+            fout << T(lang, "This ATM sessions: ", "이 ATM 세션 수: ")
                  << totalSessions
                  << T(lang, " (customer ", " (고객 ")
                  << customerSessions
@@ -739,13 +740,8 @@ void RunConsole(SystemState& state) {
 
             ++state.totalSessions;
             ++state.adminSessions;
-            RunAdminMenu(state.transactions,
-                         state.totalSessions,
-                         state.customerSessions,
-                         state.adminSessions,
-                         state.banks,
-                         state.atms,
-                         atm->GetActiveLanguage());
+            atm->IncrementAdminSession();
+            RunAdminMenu(atm, state.banks, state.atms, atm->GetActiveLanguage());
             atm->EndSession();
             continue;
         }
@@ -804,8 +800,7 @@ void RunConsole(SystemState& state) {
             continue;
         }
 
-        ++state.totalSessions;
-        ++state.customerSessions;
+        atm->IncrementCustomerSession();
         RunAtmMenu(atm, state.accounts, state.banks, state.atms);
     }
 }
