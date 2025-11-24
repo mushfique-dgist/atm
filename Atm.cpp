@@ -132,7 +132,11 @@ ATM::ATM(const std::string& serialNumber,
       bilingual_(bilingual),
       language_(ATMLanguage_English),
       fees_(ATMFees::CreateDefault()),
-      sessionActive_(false) {
+      sessionActive_(false),
+      transactions_(),
+      totalSessions_(0),
+      customerSessions_(0),
+      adminSessions_(0) {
     for (int i = 0; i < MAX_BANK_SLOTS; ++i) {
         acceptedBanks_[i] = NULL;
     }
@@ -235,6 +239,12 @@ bool ATM::TryGiveCash(const CashDrawer& cash) {
 
     cashInventory_.Remove(cash);
     return true;
+}
+
+void ATM::AddTransaction(Transaction* t) {
+    if (t != nullptr) {
+        transactions_.push_back(t);
+    }
 }
 
 void ATM::StartCustomerSession(const Card* card, Account* account, bool primaryBankCard) {
@@ -490,6 +500,7 @@ void ATM::RequestDeposit(const CashDrawer& cash, long long checkAmount, const Ca
                                                       depositAmount,
                                                       event.feeCharged,
                                                       event.note);
+    AddTransaction(transaction);
     accountBank->addTransaction(transaction);
     account->recordTransaction(transaction);
 }
@@ -584,6 +595,7 @@ void ATM::RequestWithdrawal(long long amount) {
                                                          amount,
                                                          event.feeCharged,
                                                          event.note);
+    AddTransaction(transaction);
     accountBank->addTransaction(transaction);
     account->recordTransaction(transaction);
 }
@@ -683,6 +695,7 @@ void ATM::RequestAccountTransfer(Account* destination, long long amount) {
                                                               amount,
                                                               fee,
                                                               event.note);
+    AddTransaction(transaction);
     sourceBank->addTransaction(transaction);
     source->recordTransaction(transaction);
     destination->recordTransaction(transaction);
@@ -706,6 +719,13 @@ void ATM::RequestCashTransfer(Account* destination, const CashDrawer& cashInsert
 
     if (cashInserted.ItemCount() == 0) {
         Say(language_, "Please insert cash to transfer.\n", "이체할 현금을 넣어 주세요.\n");
+        return;
+    }
+
+    if (cashInserted.ItemCount() > MAX_INSERT_ITEMS) {
+        Say(language_,
+            "Cash transfer exceeds the 50 item limit.\n",
+            "현금 이체는 최대 50개까지만 가능합니다.\n");
         return;
     }
 
@@ -769,6 +789,7 @@ void ATM::RequestCashTransfer(Account* destination, const CashDrawer& cashInsert
                                                            transferAmount,
                                                            fee,
                                                            event.note);
+    AddTransaction(transaction);
     destinationBank->addTransaction(transaction);
     destination->recordTransaction(transaction);
 }
