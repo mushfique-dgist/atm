@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Placeholder Visual Studio Class Diagram (.cd) file.
+  Open this file in Visual Studio to edit and use the Class Designer.
+  Note: This file is a simple placeholder. Add a Class Diagram through
+  Visual Studio (Add -> New Item -> Utility -> Class Diagram) to generate
+  a proper, editable diagram attached to your project/solution.
+--> 
+<ClassDiagram Name="ATMModel" xmlns="http://schemas.microsoft.com/VisualStudio/2004/Design/ClassDiagram">
+  <Nodes>
+  </Nodes>
+  <Relations>
+  </Relations>
+</ClassDiagram>
