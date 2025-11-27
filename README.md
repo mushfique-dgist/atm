@@ -1,6 +1,6 @@
 # DGIST ATM Simulator (CSE201 Fall 2025)
 
-Fully implemented console ATM that satisfies the official `(release) 2025-fall-cse201-term project - v4` requirements, the TA clarifications in `qa_for_project.txt`, and the team’s guidelines. All core features (customer + admin flows, fees, language choice, per‑ATM histories, receipts, snapshots) are complete and documented.
+Fully implemented console ATM that satisfies the official `(release) 2025-fall-cse201-term project - v4` requirements and the TA clarifications in `qa_for_project.txt`. All core features (customer + admin flows, fees, language choice, per‑ATM histories, receipts, snapshots) are complete and documented.
 
 ## Build & Run
 
@@ -38,13 +38,7 @@ The program loads `sample_initial_condition.txt`, prompts for admin cards/PINs (
 
 ## Logs, Docs, and QA
 
-- `project-req.md` — Requirement checklist with code references and TA clarifications.
-- `PROJECT_TASKLIST.md` — Task/status tracker per file and UI mapping.
-- `qa_for_project.txt` — Full TA Q&A; latest clarifications included.
-- Explanation files (line‑by‑line): `ATM-cpp.txt`, `ATM-hpp.txt`, `Bank-cpp.txt`, `Bank-hpp.txt`, `Account-cpp.txt`, `Account-hpp.txt`, `Card-cpp.txt`, `Card-hpp.txt`, `Transaction-cpp.txt`, `Transaction-hpp.txt`, `main-cpp.txt`.
-- Test transcripts: `bad-output.txt` and `happy-output.txt`.
-- Overview: `main-project-overview.md`.
-- UML: `project-uml.puml` (PlantUML).
+- Internal docs (requirement checklist, task tracker, QA notes, overview, UML, and test transcripts) are bundled in the repo; see the `docs/` notes maintained during development.
 
 ## Notes and Known Choices
 
@@ -59,5 +53,3 @@ The program loads `sample_initial_condition.txt`, prompts for admin cards/PINs (
 - **Permission denied on main.exe**: Close any running `main.exe` before rebuilding.
 - **Card not recognized**: Only cards from the init file + runtime admin cards are valid.
 - **Fee mismatch**: Deposit requires exact fee in cash; otherwise the transaction is canceled.
-
-For requirement-by-requirement evidence, see `project-req.md`. For design details, see `main-project-overview.md`.
