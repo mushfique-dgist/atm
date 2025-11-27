@@ -4,6 +4,14 @@ This folder contains internal documentation for the DGIST ATM Simulator project.
 
 - `project-uml.puml`: PlantUML source file describing the class diagram of the project.
 
+Rendered diagrams
+- `project-uml.svg`: Rendered SVG (committed to repo)
+- `project-uml.png`: Rendered PNG (committed to repo)
+
+Preview in Markdown (in this README):
+
+![Class Diagram](project-uml.svg)
+
 How to generate the diagram:
 
 1) Using PlantUML (requires Java):
