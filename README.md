@@ -1,87 +1,63 @@
-#### Build & Run Instructions
+# DGIST ATM Simulator (CSE201 Fall 2025)
 
-- From the project directory, build using the following command
+Fully implemented console ATM that satisfies the official `(release) 2025-fall-cse201-term project - v4` requirements, the TA clarifications in `qa_for_project.txt`, and the team’s guidelines. All core features (customer + admin flows, fees, language choice, per‑ATM histories, receipts, snapshots) are complete and documented.
 
+## Build & Run
+
+From the project root:
 ```bash
-# build
 g++ -std=c++14 main.cpp Atm.cpp Bank.cpp Account.cpp Card.cpp Transaction.cpp -o main.exe
+./main.exe
 ```
+The program loads `sample_initial_condition.txt`, prompts for admin cards/PINs (per bank), and then shows the main menu.
 
-- From the project directory, run using the following command
+## Quick Usage Guide
 
-```bash
-# run
-.\main.exe
-```
+- **Select ATM & Language**: Pick an ATM index. If bilingual, choose English or Korean; unilingual ATMs auto‑select English.
+- **Customer session**: Enter card number, then PIN (3 attempts). Menu: Deposit / Withdraw / Account transfer / Cash transfer / Print receipt / Snapshot / End session.
+- **Admin session**: Enter bank’s admin card/PIN. Menu: Print all transactions (this ATM), Export transactions to file, Snapshot, Exit.
+- **Slash snapshot (`/`)**: Available at main menu, customer ATM menu, and admin menu; shows all ATMs’ cash (per denomination) and all accounts’ balances.
 
-# ATM Term Project
+## Features Implemented
 
-This repository is the starting point for the Fall 2025 CSE201 term project. We are kicking off the work on a console based ATM simulator that must satisfy the full requirement list from the official project brief. Nothing here is final yet—this document captures how we plan to organise the effort and what is currently in the repository.
+- **Initialization (REQ 1.x)**: Builds Banks/Accounts/Cards/ATMs from the input file; applies single vs multi‑bank, unilingual vs bilingual, fee schedules, and loads initial cash drawers.
+- **Language (REQ 8.x)**: Bilingual ATMs prompt for EN/KR; all menus/errors/receipts/admin history reflect the chosen language. Unilingual ATMs force English with a notice.
+- **Sessions & Auth (REQ 2.x/3.x)**: Card + PIN with 3‑attempt limit; per‑session withdrawal cap (max 3), per‑transaction withdrawal cap (500,000), session event logging, and session summary/receipt.
+- **Deposits (REQ 4.x)**: Per‑denomination cash input, multi‑check input, 50‑item limit (cash + checks), exact fee-in-cash validation, cash added to ATM, checks not added to ATM.
+- **Withdrawals (REQ 5.x)**: Fewest-bills dispensing, cash/fee availability checks, fee charged to account, ATM inventory updated, limits enforced.
+- **Transfers (REQ 6.x)**: Account transfers with correct primary/non‑primary fees; cash transfers accept cash only, enforce 50‑bill limit, fee paid in cash, deposit remainder to destination; source recorded in history.
+- **Admin history (REQ 7.x)**: Per‑ATM transaction log with ID, card, type, amount, fee, from/to, note; export to file; session counters shown per ATM.
+- **Snapshots (REQ 10.x)**: `/` shows all ATMs’ cash (with bill counts) and all accounts’ balances.
+- **Exception handling (REQ 9.x)**: Clear, localized errors; fatal cases end session, non‑fatal cases cancel the transaction per TA guidance.
 
-## Project Intent
+## Inputs and Prompts
 
-- Translate the assignment PDF into a maintainable C++ design that can grow with the team’s feature work.
-- Capture early decisions so everyone understands the direction before we dive into detailed implementation.
-- Keep the main branch tidy while we experiment with different class layouts and session flows.
+- **Initial data**: `sample_initial_condition.txt` (banks, accounts, ATMs, initial cash). Grading files follow the same format.
+- **Admin cards**: Enter at startup per bank (any string/format is allowed per TA).
+- **Cash/fee/check prompts**: Cash by denomination counts; fee cash must match the fee; checks via multi‑entry amounts (>=100,000); 50‑item cap applies to deposits and cash transfers.
 
-## Current Status
+## Logs, Docs, and QA
 
-- The code compiles and reads the initial condition file to prove the parsing logic.
-- Core classes (`ATM`, `Bank`, `Account`, `Card`, `Transaction`, etc.) exist as placeholder with minimal behaviour.
-- No user facing features (deposits, withdrawals, transfers, admin menus, multilingual prompts) are implemented yet; all of that is planned in the roadmap below.
+- `project-req.md` — Requirement checklist with code references and TA clarifications.
+- `PROJECT_TASKLIST.md` — Task/status tracker per file and UI mapping.
+- `qa_for_project.txt` — Full TA Q&A; latest clarifications included.
+- Explanation files (line‑by‑line): `ATM-cpp.txt`, `ATM-hpp.txt`, `Bank-cpp.txt`, `Bank-hpp.txt`, `Account-cpp.txt`, `Account-hpp.txt`, `Card-cpp.txt`, `Card-hpp.txt`, `Transaction-cpp.txt`, `Transaction-hpp.txt`, `main-cpp.txt`.
+- Test transcripts: `bad-output.txt` and `happy-output.txt`.
+- Overview: `main-project-overview.md`.
+- UML: `project-uml.puml` (PlantUML).
 
-## Repository Layout
+## Notes and Known Choices
 
-> The structure below reflects the initial bootstrap. Expect files to move around as we factor the implementation; nothing is locked in.
+- Transaction history is **per ATM** (per TA acceptance), includes all required fields, and is exported per ATM.
+- Fee cash is inserted separately and not credited to accounts; notes clarify this in both languages.
+- Cash transfer capped at 50 bills to mirror the deposit item limit (allowed by TA).
+- Unilingual ATMs force English; bilingual ATMs honor the chosen language for menus and history export; summaries/notes use the viewer’s language.
 
-- `main.cpp` – entry point; currently handles file input and prints what was parsed.
-- `Account.cpp`, `ATM.cpp`, `Bank.cpp`, `transaction.cpp`, `user.cpp` – placeholder translation units ready for real logic.
-- `sample_initial_condition.txt` – example of the required startup data format (refer to REQ1.11).
-- `.gitignore` – keeps editor specific folders such as `.vscode/` out of version control.
+## Troubleshooting
 
-We will add or remove files as the design settles, so treat this as a snapshot rather than a finished layout.
+- **Compile errors**: Use `g++ -std=c++14` as shown; ensure all `.cpp` files are included.
+- **Permission denied on main.exe**: Close any running `main.exe` before rebuilding.
+- **Card not recognized**: Only cards from the init file + runtime admin cards are valid.
+- **Fee mismatch**: Deposit requires exact fee in cash; otherwise the transaction is canceled.
 
-## Getting Set Up
-
-1. Install a C++20 capable toolchain (MSVC, clang, or g++).
-2. Prepare an input file that matches the assignment format.
-3. Build and run:
-   ```
-   g++ -std=c++20 main.cpp -o atm
-   ./atm
-   ```
-   The program currently just echoes the parsed data—it is a scaffolding check, not a feature demo.
-
-## Implementation Roadmap
-
-We are working through the requirements section by section. Highlights:
-
-- **Initialisation (REQ1.x)** – flesh out ATM cash drawers, fee schedules, and dynamic creation of banks/accounts.
-- **Session Lifecycle (REQ2.x)** – add session tracking, per session limits, and end-of-session summaries.
-- **Authorisation (REQ3.x)** – implement PIN validation, retry limits, and card lockouts.
-- **Transactions (REQ4.x – REQ6.x)** – build deposit, withdrawal, cash transfer, and account transfer flows with a shared transaction log.
-- **Admin Features (REQ7.x)** – wire the admin card path and the transaction history export.
-- **Language Support (REQ8.x)** – centralise prompts and allow runtime language selection.
-- **Exception Handling and Snapshots (REQ9.x, REQ10.x)** – design consistent error messaging and the slash command for graders.
-
-Each bullet above still needs coding and tests; we will open issues or branches as we pick them up.
-
-## Working Agreements
-
-- Use feature branches and keep commits focused so reviews are manageable.
-- Document requirement coverage in pull requests with console transcripts or notes.
-- Sync regularly before touching shared headers to avoid merge headaches.
-
-## Verification Plans
-
-- Build lightweight console driven tests to rehearse requirement scenarios.
-- Capture manual transcripts for complex flows (multi language, admin history dump) and store them in a `docs/tests/` folder once it exists.
-- Re-run basic parsing and session smoke tests before merging into `main`.
-
-## Upcoming Focus
-
-- Finalise the class interfaces so we can divide implementation tasks.
-- Decide how to persist transaction history across sessions (file output versus in-memory only for the demo).
-- Draft the reporting template required for the final submission so screenshots and requirement references are collected along the way.
-
-This README will evolve as we make progress. For now it records our launch point and the plan of attack. Once we begin landing features we will add changelog entries and link to design notes.
+For requirement-by-requirement evidence, see `project-req.md`. For design details, see `main-project-overview.md`.
