@@ -47,7 +47,7 @@ int PromptInt(const std::string& message, int minValue) {
             }
         try {
             value = std::stoi(input);
-            if (value && value >= minValue) {
+            if (value >= minValue) {
                 return value;
             }   
         std::cout << "Invalid input. Try again.\n";
@@ -69,7 +69,7 @@ int PromptIntWithMax(const std::string& message, int minValue, int maxValue) {
             }
         try {
             value = std::stoi(input);
-            if (value && value >= minValue && value <= maxValue) {
+            if (value >= minValue && value <= maxValue) {
                 return value;
             }   
         std::cout << "Invalid input. Try again.\n";
@@ -81,7 +81,7 @@ int PromptIntWithMax(const std::string& message, int minValue, int maxValue) {
 }
 
 long long PromptLongLong(const std::string& message, long long minValue) {
-    int value = 0;
+    long long value = 0;
     while (true) {
         std::cout << message;
         std:: string input;
@@ -91,7 +91,7 @@ long long PromptLongLong(const std::string& message, long long minValue) {
             }
         try {
             value = std::stoll(input);
-            if (value && value >= minValue) {
+            if (value >= minValue) {
                 return value;
             }   
         std::cout << "Invalid input. Try again.\n";
@@ -104,14 +104,14 @@ long long PromptLongLong(const std::string& message, long long minValue) {
 }
 
 long long PromptLongLongWithMax(const std::string& message, long long minValue, long long maxValue) {
-    int value = 0;
+    long long value = 0;
     while (true) {
         std::cout << message;
         std:: string input;
         std:: cin >> input;
         try {
             value = std::stoll(input);
-            if (value && value >= minValue && value <= maxValue) {
+            if (value >= minValue && value <= maxValue) {
                 return value;
             }   
         std::cout << "Invalid input. Try again.\n";
@@ -193,15 +193,18 @@ long long PromptCheckAmounts(int& checkCount) {
     checkCount = 0;
     while (true) {
         if (checkCount >= 10) {
-            std::cout << "Maximum of 10 checks reached.\n";
+            std::cout << T(globalLanguage, 
+                "Maximum of 10 checks reached.\n", "최대 10장의 수표만 입력할 수 있습니다.\n");
             break;
         }
-        long long amount = PromptLongLong("Enter check amount (0 to finish): ", 0);
+        long long amount = PromptLongLong(T(globalLanguage, 
+            "Enter check amount (0 to finish): ", "수표 금액을 입력하세요 (0 입력 시 종료): "), 0);
         if (amount == 0) {
             break;
         }
         if (amount < 100000) {
-            std::cout << "Each check must be at least 100,000 KRW.\n";
+            std::cout << T(globalLanguage,
+                "Each check must be at least 100,000 KRW.\n", "각 수표는 최소 100,000원이어야 합니다.\n");
             continue;
         }
         total += amount;
@@ -216,14 +219,16 @@ CashDrawer PromptCashDrawer(const std::string& label, int maxBills) {
         drawer.noteCounts[i] = 0;
     }
 
-    std::cout << "Enter bills for " << label << " (use non-negative integers).\n";
-    int count50k = PromptIntWithMax("50,000 KRW bills: ", 0, maxBills);
+    std::cout << T(globalLanguage, 
+        "Enter bills for " + label + " (use non-negative integers).\n",
+         "지폐 개수를 입력하세요 " + label + " (음수가 아닌 정수를 사용하세요).");
+    int count50k = PromptIntWithMax(T(globalLanguage, "50,000 KRW bills: ", "50,000원 지폐: "), 0, maxBills);
     maxBills -= count50k;
-    int count10k = PromptIntWithMax("10,000 KRW bills: ", 0, maxBills);
+    int count10k = PromptIntWithMax(T(globalLanguage, "10,000 KRW bills: ", "10,000원 지폐: "), 0, maxBills);
     maxBills -= count10k;
-    int count5k = PromptIntWithMax("5,000 KRW bills: ", 0, maxBills);
+    int count5k = PromptIntWithMax(T(globalLanguage, "5,000 KRW bills: ", "5,000원 지폐: "), 0, maxBills);
     maxBills -= count5k;
-    int count1k = PromptIntWithMax("1,000 KRW bills: ", 0, maxBills);
+    int count1k = PromptIntWithMax(T(globalLanguage, "1,000 KRW bills: ", "1,000원 지폐: "), 0, maxBills);
 
     drawer.noteCounts[0] = count1k;
     drawer.noteCounts[1] = count5k;
@@ -290,10 +295,10 @@ CashDrawer PromptFeeCash(ATMLanguage lang, long long fee) {
                    "수수료 지폐 개수를 입력하세요 (이 현금은 계좌에 추가되지 않고 수수료로 사용됩니다).\n");
     std::cout << T(lang, "Exact fee amount: ", "정확한 수수료 금액: ") << fee << "\n";
 
-    int count50k = PromptInt("50,000 KRW bills: ", 0);
-    int count10k = PromptInt("10,000 KRW bills: ", 0);
-    int count5k = PromptInt("5,000 KRW bills: ", 0);
-    int count1k = PromptInt("1,000 KRW bills: ", 0);
+    int count50k = PromptInt(T(lang, "50,000 KRW bills: ", "50,000원 지폐: "), 0);
+    int count10k = PromptInt(T(lang, "10,000 KRW bills: ", "10,000원 지폐: "), 0);
+    int count5k = PromptInt(T(lang, "5,000 KRW bills: ", "5,000원 지폐: "), 0);
+    int count1k = PromptInt(T(lang, "1,000 KRW bills: ", "1,000원 지폐: "), 0);
 
     drawer.noteCounts[0] = count1k;
     drawer.noteCounts[1] = count5k;
@@ -631,6 +636,7 @@ void RunAtmMenu(ATM* atm,
 
     while (true) {
         ATMLanguage lang = atm->GetActiveLanguage();
+        globalLanguage = lang;
         std::cout << "\n========================================\n";
         std::cout << T(lang, "          ATM MENU - Serial ", "          ATM 메뉴 - 일련번호 ") << atm->GetSerialNumber() << "         \n";
         std::cout << "========================================\n";
@@ -644,11 +650,6 @@ void RunAtmMenu(ATM* atm,
         std::cout << "========================================\n";
 
         std::string choiceInput = PromptString(T(lang, "Select an option: ", "옵션을 선택하세요: "));
-        if (choiceInput == "/") {
-            PrintSnapshot(banks, atms, lang);
-            continue;
-        }
-
         int choice = 0;
         {
             bool parsed = false;
@@ -746,13 +747,10 @@ void RunConsole(SystemState& state) {
 
     while (true) {
         globalSystemState = state;
+        globalLanguage = ATMLanguage_English;
         PrintMainMenu();
         std::string choiceInput = PromptString("Select an option: ");
 
-        if (choiceInput == "/") {
-            PrintSnapshot(state.banks, state.atms);
-            continue;
-        }
 
         int choice = 0;
         {
