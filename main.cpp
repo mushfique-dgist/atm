@@ -20,7 +20,13 @@ struct SystemState {
     int adminSessions = 0;
 };
 
+SystemState globalSystemState;
+ATMLanguage globalLanguage = ATMLanguage_English;
+
 namespace {
+
+// Forward declarations
+void PrintSnapshot(const std::vector<Bank*>& banks, const std::vector<ATM*>& atms, ATMLanguage lang);
 
 std::string T(ATMLanguage lang, const std::string& en, const std::string& kr) {
     return (lang == ATMLanguage_Korean) ? kr : en;
@@ -35,11 +41,21 @@ int PromptInt(const std::string& message, int minValue) {
     int value = 0;
     while (true) {
         std::cout << message;
-        if (std::cin >> value && value >= minValue) {
-            return value;
-        }
+        std:: string input;
+        std:: cin >> input;
+         if (input == "/"){
+                PrintSnapshot(globalSystemState.banks, globalSystemState.atms, globalLanguage);
+            }
+        try {
+            value = std::stoi(input);
+            if (value && value >= minValue) {
+                return value;
+            }   
         std::cout << "Invalid input. Try again.\n";
         ClearInputLine();
+        } catch (...) {
+        }
+        
     }
 }
 
@@ -47,35 +63,66 @@ int PromptIntWithMax(const std::string& message, int minValue, int maxValue) {
     int value = 0;
     while (true) {
         std::cout << message;
-        if (std::cin >> value && value >= minValue && value <= maxValue) {
-            return value;
-        }
+        std:: string input;
+        std:: cin >> input;
+        if (input == "/"){
+                PrintSnapshot(globalSystemState.banks, globalSystemState.atms, globalLanguage);
+            }
+        try {
+            value = std::stoi(input);
+            if (value && value >= minValue && value <= maxValue) {
+                return value;
+            }   
         std::cout << "Invalid input. Try again.\n";
         ClearInputLine();
+        } catch (...) {
+            
+        }
     }
 }
 
 long long PromptLongLong(const std::string& message, long long minValue) {
-    long long value = 0;
+    int value = 0;
     while (true) {
         std::cout << message;
-        if (std::cin >> value && value >= minValue) {
-            return value;
-        }
+        std:: string input;
+        std:: cin >> input;
+        if (input == "/"){
+                PrintSnapshot(globalSystemState.banks, globalSystemState.atms, globalLanguage);
+            }
+        try {
+            value = std::stoll(input);
+            if (value && value >= minValue) {
+                return value;
+            }   
         std::cout << "Invalid input. Try again.\n";
         ClearInputLine();
+        } catch (...) {
+            
+        }
+        
     }
 }
 
 long long PromptLongLongWithMax(const std::string& message, long long minValue, long long maxValue) {
-    long long value = 0;
+    int value = 0;
     while (true) {
         std::cout << message;
-        if (std::cin >> value && value >= minValue && value <= maxValue) {
-            return value;
-        }
+        std:: string input;
+        std:: cin >> input;
+        try {
+            value = std::stoll(input);
+            if (value && value >= minValue && value <= maxValue) {
+                return value;
+            }   
         std::cout << "Invalid input. Try again.\n";
         ClearInputLine();
+        } catch (...) {
+            if (input == "/"){
+                PrintSnapshot(globalSystemState.banks, globalSystemState.atms, globalLanguage);
+            }
+        }
+        
     }
 }
 
@@ -83,6 +130,9 @@ std::string PromptString(const std::string& message) {
     std::cout << message;
     std::string input;
     std::cin >> input;
+    if (input == "/"){
+        PrintSnapshot(globalSystemState.banks, globalSystemState.atms, globalLanguage);
+    }
     return input;
 }
 
@@ -677,6 +727,7 @@ void RunConsole(SystemState& state) {
     }
 
     while (true) {
+        globalSystemState = state;
         PrintMainMenu();
         std::string choiceInput = PromptString("Select an option: ");
 
@@ -870,9 +921,9 @@ int main() {
     if (!LoadInitialData("sample_initial_condition.txt", state)) {
         return 1;
     }
-
     PrintWelcomeBanner();
     ConfigureAdminCards(state);
+    globalSystemState = state;
     RunConsole(state);
     Cleanup(state);
     return 0;
