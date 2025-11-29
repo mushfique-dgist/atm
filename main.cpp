@@ -631,6 +631,13 @@ void RunAtmMenu(ATM* atm,
             CashDrawer cash = PromptCashDrawer(lang, T(lang, "deposit", "입금"));
             int checkCount = 0;
             long long checkAmount = PromptCheckAmounts(lang, checkCount);
+            long long baseDepositAmount = cash.TotalValue() + checkAmount;
+            if (baseDepositAmount <= 0) {
+                std::cout << T(lang,
+                               "Deposit amount must be positive.\n",
+                               "입금 금액은 0보다 커야 합니다.\n");
+                break;
+            }
             long long depositFee = atm->GetDepositFeeForCurrentSession();
             CashDrawer feeCash;
             if (depositFee == 0) {
