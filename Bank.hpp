@@ -43,6 +43,7 @@ public:
                   Account* toAccount,
                   long long amount,
                   long long fee);
+    bool isAdminCard(const std::string& cardNumber) const;
 
 private:
     Bank(const Bank&) = delete;

@@ -184,3 +184,7 @@ bool Bank::transfer(Account* fromAccount,
     toAccount->deposit(amount);
     return true;
 }
+
+bool Bank::isAdminCard(const std::string& cardNumber) const {
+    return adminCard_ != nullptr && adminCard_->getNumber() == cardNumber;
+}
