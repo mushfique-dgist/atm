@@ -645,6 +645,9 @@ void RunAtmMenu(ATM* atm,
         std::cout << "  [3] " << T(lang, "Account transfer", "계좌 이체") << "\n";
         std::cout << "  [4] " << T(lang, "Cash transfer", "현금 이체") << "\n";
         std::cout << "  [5] " << T(lang, "Print receipt", "영수증 출력") << "\n";
+        if (atm->IsBilingual()){
+            std::cout << "  [6] " << T(lang, "Change language", "언어 변경") << "\n";
+        }
         std::cout << "  [/] " << T(lang, "Snapshot", "스냅샷") << "\n";
         std::cout << "  [0] " << T(lang, "End session", "세션 종료") << "\n";
         std::cout << "========================================\n";
@@ -727,10 +730,23 @@ void RunAtmMenu(ATM* atm,
         case 5:
             atm->PrintReceipt(std::cout);
             break;
+        case 6:
+            if (atm->IsBilingual()){
+                ATMLanguage newLang = SelectLanguageForAtm(atm);
+                atm->SetLanguage(newLang);
+                lang = newLang;
+                globalLanguage = newLang;
+                std::cout << T(lang, "Language changed.\n", "언어가 변경되었습니다.\n");
+            }
+            break;
+        case '/':
+            break;
         default:
             std::cout << T(lang, "Unknown option.\n", "알 수 없는 선택입니다.\n");
             break;
         }
+        
+           
 
         if (!atm->HasActiveSession()) {
             std::cout << T(lang, "Session ended due to an error.\n", "오류로 인해 세션이 종료되었습니다.\n");
@@ -810,10 +826,10 @@ void RunConsole(SystemState& state) {
         if (atm->GetPrimaryBank()->isAdminCard(cardNumber)){
              Bank* primaryBank = atm->GetPrimaryBank();
             if (primaryBank == nullptr) {
-                std::cout << "This ATM does not have a primary bank configured.\n";
+                std::cout << T(langChoice, "This ATM does not have a primary bank configured.\n", "이 ATM에는 기본 은행이 구성되어 있지 않습니다.\n");
                 continue;
             }
-
+            std::cout<< T(langChoice, "Starting admin session...\n", "관리자 세션을 시작합니다...\n");
             atm->StartAdminSession(nullptr);
             bool authenticated = false;
             int attempts = 0;
