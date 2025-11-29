@@ -146,7 +146,6 @@ Account* FindAccountByNumber(const std::vector<Account*>& accounts, const std::s
 long long PromptCheckAmounts(ATMLanguage lang, int& checkCount) {
     long long total = 0;
     checkCount = 0;
-    // Spec example: up to 30 checks per deposit (page 7), with total items (cash+checks) <= 50.
     const int maxChecks = 30;
     while (true) {
         if (checkCount >= maxChecks) {
@@ -887,7 +886,7 @@ void Cleanup(SystemState& state) {
     state.banks.clear();
 }
 
-} // namespace
+}
 
 int main() {
     SystemState state;
@@ -897,7 +896,6 @@ int main() {
 
     PrintWelcomeBanner();
     ConfigureAdminCards(state);
-    // One-time snapshot after initialization/admin card setup to demonstrate REQ 1.11/10.1
     PrintSnapshot(state.banks, state.atms);
     RunConsole(state);
     Cleanup(state);
