@@ -897,6 +897,8 @@ int main() {
 
     PrintWelcomeBanner();
     ConfigureAdminCards(state);
+    // One-time snapshot after initialization/admin card setup to demonstrate REQ 1.11/10.1
+    PrintSnapshot(state.banks, state.atms);
     RunConsole(state);
     Cleanup(state);
     return 0;
