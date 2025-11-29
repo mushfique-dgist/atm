@@ -136,6 +136,7 @@ ATM::ATM(const std::string& serialNumber,
       transactions_(),
       totalSessions_(0),
       customerSessions_(0),
+      maxDepositBills_(50),
       adminSessions_(0) {
     for (int i = 0; i < MAX_BANK_SLOTS; ++i) {
         acceptedBanks_[i] = NULL;

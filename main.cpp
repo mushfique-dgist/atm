@@ -161,17 +161,20 @@ long long PromptCheckAmounts(int& checkCount) {
     return total;
 }
 
-CashDrawer PromptCashDrawer(const std::string& label) {
+CashDrawer PromptCashDrawer(const std::string& label, int maxBills) {
     CashDrawer drawer;
     for (int i = 0; i < CASH_TYPE_COUNT; ++i) {
         drawer.noteCounts[i] = 0;
     }
 
     std::cout << "Enter bills for " << label << " (use non-negative integers).\n";
-    int count50k = PromptIntWithMax("50,000 KRW bills: ", 0, 50);
-    int count10k = PromptIntWithMax("10,000 KRW bills: ", 0, 50);
-    int count5k = PromptIntWithMax("5,000 KRW bills: ", 0, 50);
-    int count1k = PromptIntWithMax("1,000 KRW bills: ", 0, 50);
+    int count50k = PromptIntWithMax("50,000 KRW bills: ", 0, maxBills);
+    maxBills -= count50k;
+    int count10k = PromptIntWithMax("10,000 KRW bills: ", 0, maxBills);
+    maxBills -= count10k;
+    int count5k = PromptIntWithMax("5,000 KRW bills: ", 0, maxBills);
+    maxBills -= count5k;
+    int count1k = PromptIntWithMax("1,000 KRW bills: ", 0, maxBills);
 
     drawer.noteCounts[0] = count1k;
     drawer.noteCounts[1] = count5k;
@@ -609,7 +612,7 @@ void RunAtmMenu(ATM* atm,
 
         switch (choice) {
         case 1: {
-            CashDrawer cash = PromptCashDrawer(T(lang, "deposit", "입금"));
+            CashDrawer cash = PromptCashDrawer(T(lang, "deposit", "입금"), atm->GetMaxDepositBillsPerSession());
             int checkCount = 0;
             long long checkAmount = PromptCheckAmounts(checkCount);
             long long depositFee = atm->GetDepositFeeForCurrentSession();
@@ -648,7 +651,7 @@ void RunAtmMenu(ATM* atm,
                 std::cout << T(lang, "Account not found.\n", "계좌를 찾을 수 없습니다.\n");
                 break;
             }
-            CashDrawer cash = PromptCashDrawer(T(lang, "cash transfer", "현금 이체"));
+            CashDrawer cash = PromptCashDrawer(T(lang, "cash transfer", "현금 이체"),atm->GetMaxDepositBillsPerSession());
             atm->RequestCashTransfer(destination, cash);
             break;
         }

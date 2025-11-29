@@ -143,6 +143,7 @@ private:
     CashDrawer cashInventory_;
     SessionState sessionInfo_;
     bool sessionActive_;
+    int maxDepositBills_;
 
     void ClearSession();
 
@@ -161,6 +162,7 @@ public:
     int GetTotalSessions() const { return totalSessions_; }
     int GetCustomerSessions() const { return customerSessions_; }
     int GetAdminSessions() const { return adminSessions_; }
+    int GetMaxDepositBillsPerSession() const { return maxDepositBills_; }
 };
 
 #endif // ATM_HPP
