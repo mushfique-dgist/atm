@@ -31,50 +31,54 @@ void ClearInputLine() {
     std::cin.ignore(100000, '\n');
 }
 
-int PromptInt(const std::string& message, int minValue) {
+int PromptInt(const std::string& message, int minValue,
+              const std::string& errorMessage = "Invalid input. Try again.\n") {
     int value = 0;
     while (true) {
         std::cout << message;
         if (std::cin >> value && value >= minValue) {
             return value;
         }
-        std::cout << "Invalid input. Try again.\n";
+        std::cout << errorMessage;
         ClearInputLine();
     }
 }
 
-int PromptIntWithMax(const std::string& message, int minValue, int maxValue) {
+int PromptIntWithMax(const std::string& message, int minValue, int maxValue,
+                     const std::string& errorMessage = "Invalid input. Try again.\n") {
     int value = 0;
     while (true) {
         std::cout << message;
         if (std::cin >> value && value >= minValue && value <= maxValue) {
             return value;
         }
-        std::cout << "Invalid input. Try again.\n";
+        std::cout << errorMessage;
         ClearInputLine();
     }
 }
 
-long long PromptLongLong(const std::string& message, long long minValue) {
+long long PromptLongLong(const std::string& message, long long minValue,
+                         const std::string& errorMessage = "Invalid input. Try again.\n") {
     long long value = 0;
     while (true) {
         std::cout << message;
         if (std::cin >> value && value >= minValue) {
             return value;
         }
-        std::cout << "Invalid input. Try again.\n";
+        std::cout << errorMessage;
         ClearInputLine();
     }
 }
 
-long long PromptLongLongWithMax(const std::string& message, long long minValue, long long maxValue) {
+long long PromptLongLongWithMax(const std::string& message, long long minValue, long long maxValue,
+                                const std::string& errorMessage = "Invalid input. Try again.\n") {
     long long value = 0;
     while (true) {
         std::cout << message;
         if (std::cin >> value && value >= minValue && value <= maxValue) {
             return value;
         }
-        std::cout << "Invalid input. Try again.\n";
+        std::cout << errorMessage;
         ClearInputLine();
     }
 }
@@ -139,20 +143,29 @@ Account* FindAccountByNumber(const std::vector<Account*>& accounts, const std::s
     return nullptr;
 }
 
-long long PromptCheckAmounts(int& checkCount) {
+long long PromptCheckAmounts(ATMLanguage lang, int& checkCount) {
     long long total = 0;
     checkCount = 0;
+    // Spec example: up to 30 checks per deposit (page 7), with total items (cash+checks) <= 50.
+    const int maxChecks = 30;
     while (true) {
-        if (checkCount >= 10) {
-            std::cout << "Maximum of 10 checks reached.\n";
+        if (checkCount >= maxChecks) {
+            std::cout << T(lang,
+                           "Maximum of 30 checks reached.\n",
+                           "최대 30개의 수표만 가능합니다.\n");
             break;
         }
-        long long amount = PromptLongLong("Enter check amount (0 to finish): ", 0);
+        long long amount = PromptLongLong(
+            T(lang, "Enter check amount (0 to finish): ", "수표 금액을 입력하세요 (0 입력 시 종료): "),
+            0,
+            T(lang, "Invalid input. Try again.\n", "잘못된 입력입니다. 다시 시도하세요.\n"));
         if (amount == 0) {
             break;
         }
         if (amount < 100000) {
-            std::cout << "Each check must be at least 100,000 KRW.\n";
+            std::cout << T(lang,
+                           "Each check must be at least 100,000 KRW.\n",
+                           "각 수표는 최소 100,000원이어야 합니다.\n");
             continue;
         }
         total += amount;
@@ -161,17 +174,24 @@ long long PromptCheckAmounts(int& checkCount) {
     return total;
 }
 
-CashDrawer PromptCashDrawer(const std::string& label) {
+CashDrawer PromptCashDrawer(ATMLanguage lang, const std::string& label) {
     CashDrawer drawer;
     for (int i = 0; i < CASH_TYPE_COUNT; ++i) {
         drawer.noteCounts[i] = 0;
     }
 
-    std::cout << "Enter bills for " << label << " (use non-negative integers).\n";
-    int count50k = PromptIntWithMax("50,000 KRW bills: ", 0, 50);
-    int count10k = PromptIntWithMax("10,000 KRW bills: ", 0, 50);
-    int count5k = PromptIntWithMax("5,000 KRW bills: ", 0, 50);
-    int count1k = PromptIntWithMax("1,000 KRW bills: ", 0, 50);
+    std::cout << T(lang,
+                   "Enter bills for " + label + " (use non-negative integers).\n",
+                   label + "에 사용할 지폐 개수를 입력하세요 (음수가 아닌 정수).\n");
+    std::string err = T(lang, "Invalid input. Try again.\n", "잘못된 입력입니다. 다시 시도하세요.\n");
+    int count50k = PromptIntWithMax(
+        T(lang, "50,000 KRW bills: ", "50,000원 지폐 수: "), 0, 50, err);
+    int count10k = PromptIntWithMax(
+        T(lang, "10,000 KRW bills: ", "10,000원 지폐 수: "), 0, 50, err);
+    int count5k = PromptIntWithMax(
+        T(lang, "5,000 KRW bills: ", "5,000원 지폐 수: "), 0, 50, err);
+    int count1k = PromptIntWithMax(
+        T(lang, "1,000 KRW bills: ", "1,000원 지폐 수: "), 0, 50, err);
 
     drawer.noteCounts[0] = count1k;
     drawer.noteCounts[1] = count5k;
@@ -238,10 +258,11 @@ CashDrawer PromptFeeCash(ATMLanguage lang, long long fee) {
                    "수수료 지폐 개수를 입력하세요 (이 현금은 계좌에 추가되지 않고 수수료로 사용됩니다).\n");
     std::cout << T(lang, "Exact fee amount: ", "정확한 수수료 금액: ") << fee << "\n";
 
-    int count50k = PromptInt("50,000 KRW bills: ", 0);
-    int count10k = PromptInt("10,000 KRW bills: ", 0);
-    int count5k = PromptInt("5,000 KRW bills: ", 0);
-    int count1k = PromptInt("1,000 KRW bills: ", 0);
+    std::string err = T(lang, "Invalid input. Try again.\n", "잘못된 입력입니다. 다시 시도하세요.\n");
+    int count50k = PromptInt(T(lang, "50,000 KRW bills: ", "50,000원 지폐 수: "), 0, err);
+    int count10k = PromptInt(T(lang, "10,000 KRW bills: ", "10,000원 지폐 수: "), 0, err);
+    int count5k = PromptInt(T(lang, "5,000 KRW bills: ", "5,000원 지폐 수: "), 0, err);
+    int count1k = PromptInt(T(lang, "1,000 KRW bills: ", "1,000원 지폐 수: "), 0, err);
 
     drawer.noteCounts[0] = count1k;
     drawer.noteCounts[1] = count5k;
@@ -307,7 +328,8 @@ ATMLanguage SelectLanguageForAtm(ATM* atm) {
         std::cout << "\nSelect language / 언어를 선택하세요\n";
         std::cout << "  [1] English\n";
         std::cout << "  [2] 한국어\n";
-        int choice = PromptInt("Choice: ", 1);
+        std::string langErr = "Invalid input. Try again. / 잘못된 입력입니다. 다시 시도하세요.\n";
+        int choice = PromptIntWithMax("Choice / 선택: ", 1, 2, langErr);
         if (choice == 1) {
             atm->SetLanguage(ATMLanguage_English);
             return ATMLanguage_English;
@@ -316,7 +338,6 @@ ATMLanguage SelectLanguageForAtm(ATM* atm) {
             atm->SetLanguage(ATMLanguage_Korean);
             return ATMLanguage_Korean;
         }
-        std::cout << "Invalid input. Try again.\n";
     }
 }
 
@@ -578,26 +599,25 @@ void RunAtmMenu(ATM* atm,
             continue;
         }
 
-        int choice = 0;
-        {
-            bool parsed = false;
-            if (!choiceInput.empty()) {
-                bool isNumber = true;
-                for (std::size_t i = 0; i < choiceInput.size(); ++i) {
-                    if (choiceInput[i] < '0' || choiceInput[i] > '9') {
-                        isNumber = false;
-                        break;
-                    }
-                }
-                if (isNumber) {
-                    choice = static_cast<int>(std::stoi(choiceInput));
-                    parsed = true;
+        bool parsed = true;
+        if (choiceInput.empty()) {
+            parsed = false;
+        } else {
+            for (char c : choiceInput) {
+                if (c < '0' || c > '9') {
+                    parsed = false;
+                    break;
                 }
             }
-            if (!parsed) {
-                std::cout << "Invalid input. Try again.\n";
-                continue;
-            }
+        }
+        if (!parsed) {
+            std::cout << T(lang, "Invalid input. Try again.\n", "잘못된 입력입니다. 다시 시도하세요.\n");
+            continue;
+        }
+        int choice = std::stoi(choiceInput);
+        if (choice < 0 || choice > 5) {
+            std::cout << T(lang, "Invalid input. Try again.\n", "잘못된 입력입니다. 다시 시도하세요.\n");
+            continue;
         }
 
         if (choice == 0) {
@@ -609,9 +629,9 @@ void RunAtmMenu(ATM* atm,
 
         switch (choice) {
         case 1: {
-            CashDrawer cash = PromptCashDrawer(T(lang, "deposit", "입금"));
+            CashDrawer cash = PromptCashDrawer(lang, T(lang, "deposit", "입금"));
             int checkCount = 0;
-            long long checkAmount = PromptCheckAmounts(checkCount);
+            long long checkAmount = PromptCheckAmounts(lang, checkCount);
             long long depositFee = atm->GetDepositFeeForCurrentSession();
             CashDrawer feeCash;
             if (depositFee == 0) {
@@ -626,7 +646,10 @@ void RunAtmMenu(ATM* atm,
             break;
         }
         case 2: {
-            long long amount = PromptLongLong(T(lang, "Enter withdrawal amount: ", "출금 금액을 입력하세요: "), 0);
+            long long amount = PromptLongLong(
+                T(lang, "Enter withdrawal amount: ", "출금 금액을 입력하세요: "),
+                0,
+                T(lang, "Invalid input. Try again.\n", "잘못된 입력입니다. 다시 시도하세요.\n"));
             atm->RequestWithdrawal(amount);
             break;
         }
@@ -637,7 +660,10 @@ void RunAtmMenu(ATM* atm,
                 std::cout << T(lang, "Account not found.\n", "계좌를 찾을 수 없습니다.\n");
                 break;
             }
-            long long amount = PromptLongLong(T(lang, "Enter transfer amount: ", "이체 금액을 입력하세요: "), 1);
+            long long amount = PromptLongLong(
+                T(lang, "Enter transfer amount: ", "이체 금액을 입력하세요: "),
+                1,
+                T(lang, "Invalid input. Try again.\n", "잘못된 입력입니다. 다시 시도하세요.\n"));
             atm->RequestAccountTransfer(destination, amount);
             break;
         }
@@ -648,7 +674,7 @@ void RunAtmMenu(ATM* atm,
                 std::cout << T(lang, "Account not found.\n", "계좌를 찾을 수 없습니다.\n");
                 break;
             }
-            CashDrawer cash = PromptCashDrawer(T(lang, "cash transfer", "현금 이체"));
+            CashDrawer cash = PromptCashDrawer(lang, T(lang, "cash transfer", "현금 이체"));
             atm->RequestCashTransfer(destination, cash);
             break;
         }
@@ -682,33 +708,32 @@ void RunConsole(SystemState& state) {
             continue;
         }
 
-        int choice = 0;
-        {
-            bool parsed = false;
-            if (!choiceInput.empty()) {
-                bool isNumber = true;
-                for (std::size_t i = 0; i < choiceInput.size(); ++i) {
-                    if (choiceInput[i] < '0' || choiceInput[i] > '9') {
-                        isNumber = false;
-                        break;
-                    }
-                }
-                if (isNumber) {
-                    choice = static_cast<int>(std::stoi(choiceInput));
-                    parsed = true;
+        // Validate main menu choice (0–2)
+        bool parsed = true;
+        if (choiceInput.empty()) {
+            parsed = false;
+        } else {
+            for (char c : choiceInput) {
+                if (c < '0' || c > '9') {
+                    parsed = false;
+                    break;
                 }
             }
-            if (!parsed) {
-                std::cout << "Invalid input. Try again.\n";
-                continue;
-            }
+        }
+        if (!parsed) {
+            std::cout << "Invalid input. Try again.\n";
+            continue;
+        }
+        int choice = std::stoi(choiceInput);
+        if (choice < 0 || choice > 2) {
+            std::cout << "Invalid input. Try again.\n";
+            continue;
         }
 
         if (choice == 0) {
             std::cout << "Goodbye!\n";
             break;
         }
-
         if (choice == 2) {
             PrintSnapshot(state.banks, state.atms);
             continue;
@@ -722,18 +747,20 @@ void RunConsole(SystemState& state) {
                       << (atm->GetPrimaryBank() ? atm->GetPrimaryBank()->getBankName() : "Unknown")
                       << ")\n";
         }
-        int atmIndex = PromptInt("Select ATM index: ", 0);
-        if (atmIndex < 0 || static_cast<size_t>(atmIndex) >= state.atms.size()) {
-            std::cout << "Invalid ATM selection.\n";
-            continue;
-        }
+        int atmIndex = PromptIntWithMax("Select ATM index: ", 0,
+                                        static_cast<int>(state.atms.size()) - 1,
+                                        "Invalid ATM selection.\n");
 
         ATM* atm = state.atms[atmIndex];
         ATMLanguage langChoice = SelectLanguageForAtm(atm);
         std::cout << T(langChoice, "1) Customer session\n", "1) 고객 세션\n");
         std::cout << T(langChoice, "2) Admin transaction history\n", "2) 관리자 거래 내역\n");
         std::cout << T(langChoice, "0) Cancel\n", "0) 취소\n");
-        int sessionChoice = PromptInt(T(langChoice, "Select session type: ", "세션 유형을 선택하세요: "), 0);
+        int sessionChoice = PromptIntWithMax(
+            T(langChoice, "Select session type: ", "세션 유형을 선택하세요: "),
+            0,
+            2,
+            T(langChoice, "Invalid input. Try again.\n", "잘못된 입력입니다. 다시 시도하세요.\n"));
         if (sessionChoice == 0) {
             continue;
         }
