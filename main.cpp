@@ -7,7 +7,7 @@
 #include "Bank.hpp"
 #include "Card.hpp"
 #include "Transaction.hpp"
-#include "atm.hpp"
+#include "Atm.hpp"
 
 struct SystemState {
     std::vector<Bank*> banks;
@@ -43,11 +43,35 @@ int PromptInt(const std::string& message, int minValue) {
     }
 }
 
+int PromptIntWithMax(const std::string& message, int minValue, int maxValue) {
+    int value = 0;
+    while (true) {
+        std::cout << message;
+        if (std::cin >> value && value >= minValue && value <= maxValue) {
+            return value;
+        }
+        std::cout << "Invalid input. Try again.\n";
+        ClearInputLine();
+    }
+}
+
 long long PromptLongLong(const std::string& message, long long minValue) {
     long long value = 0;
     while (true) {
         std::cout << message;
         if (std::cin >> value && value >= minValue) {
+            return value;
+        }
+        std::cout << "Invalid input. Try again.\n";
+        ClearInputLine();
+    }
+}
+
+long long PromptLongLongWithMax(const std::string& message, long long minValue, long long maxValue) {
+    long long value = 0;
+    while (true) {
+        std::cout << message;
+        if (std::cin >> value && value >= minValue && value <= maxValue) {
             return value;
         }
         std::cout << "Invalid input. Try again.\n";
@@ -119,6 +143,10 @@ long long PromptCheckAmounts(int& checkCount) {
     long long total = 0;
     checkCount = 0;
     while (true) {
+        if (checkCount >= 10) {
+            std::cout << "Maximum of 10 checks reached.\n";
+            break;
+        }
         long long amount = PromptLongLong("Enter check amount (0 to finish): ", 0);
         if (amount == 0) {
             break;
@@ -140,10 +168,10 @@ CashDrawer PromptCashDrawer(const std::string& label) {
     }
 
     std::cout << "Enter bills for " << label << " (use non-negative integers).\n";
-    int count50k = PromptInt("50,000 KRW bills: ", 0);
-    int count10k = PromptInt("10,000 KRW bills: ", 0);
-    int count5k = PromptInt("5,000 KRW bills: ", 0);
-    int count1k = PromptInt("1,000 KRW bills: ", 0);
+    int count50k = PromptIntWithMax("50,000 KRW bills: ", 0, 50);
+    int count10k = PromptIntWithMax("10,000 KRW bills: ", 0, 50);
+    int count5k = PromptIntWithMax("5,000 KRW bills: ", 0, 50);
+    int count1k = PromptIntWithMax("1,000 KRW bills: ", 0, 50);
 
     drawer.noteCounts[0] = count1k;
     drawer.noteCounts[1] = count5k;
