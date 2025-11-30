@@ -25,6 +25,9 @@ struct SystemState {
 
 SystemState globalSystemState;
 ATMLanguage globalLanguage = ATMLanguage_English;
+ATM* globalCurrentATM = nullptr;
+Account* globalCurrentAccount = nullptr;
+Account* globalDestinationAccount = nullptr;
 
 namespace {
 
@@ -273,7 +276,10 @@ void PrintSnapshot(const std::vector<Bank*>& banks, const std::vector<ATM*>& atm
         int count10k = drawer.noteCounts[2];
         int count50k = drawer.noteCounts[3];
 
-        std::cout << bankName << " ATM [SN:" << atm->GetSerialNumber() << "] "
+        // Mark current ATM with text
+        std::string marker = (atm == globalCurrentATM) ? T(lang, " (currently in use)", " (현재 사용 중)") : "";
+        
+        std::cout << bankName << " ATM [SN:" << atm->GetSerialNumber() << "]" << marker << " "
                   << T(lang, "Remaining cash: ", "잔여 현금: ") << totalCash
                   << T(lang, " | Left cash: ", " | 남은 지폐: ")
                   << count1k << T(lang, " x 1,000 won, ", " x 1,000원, ")
@@ -294,11 +300,19 @@ void PrintSnapshot(const std::vector<Bank*>& banks, const std::vector<ATM*>& atm
             if (account == nullptr) {
                 continue;
             }
+            // Mark current account and destination account with text
+            std::string marker = "";
+            if (account == globalCurrentAccount) {
+                marker = T(lang, " (logged in)", " (로그인 중)");
+            } else if (account == globalDestinationAccount) {
+                marker = T(lang, " (transaction destination)", " (거래 대상)");
+            }
+            
             std::cout << T(lang, "Account", "계좌") << " ["
                       << T(lang, "Bank", "은행") << ": " << bank->getBankName()
                       << ", " << T(lang, "No.", "번호") << " " << account->getAccountNumber()
                       << ", " << T(lang, "Owner", "소유자") << ": " << account->getOwnerName()
-                      << "] " << T(lang, "Balance", "잔액") << " : " << account->getBalance() << "\n";
+                      << "]" << marker << " " << T(lang, "Balance", "잔액") << " : " << account->getBalance() << "\n";
         }
     }
 
@@ -753,8 +767,10 @@ void RunAtmMenu(ATM* atm,
                 std::cout << T(lang, "Account not found.\n", "계좌를 찾을 수 없습니다.\n");
                 break;
             }
+            globalDestinationAccount = destination;
             long long amount = PromptLongLong(T(lang, "Enter transfer amount: ", "이체 금액을 입력하세요: "), 1);
             atm->RequestAccountTransfer(destination, amount);
+            globalDestinationAccount = nullptr;
             break;
         }
         case 4: {
@@ -764,8 +780,10 @@ void RunAtmMenu(ATM* atm,
                 std::cout << T(lang, "Account not found.\n", "계좌를 찾을 수 없습니다.\n");
                 break;
             }
+            globalDestinationAccount = destination;
             CashDrawer cash = PromptCashDrawer(T(lang, "cash transfer", "현금 이체"),atm->GetMaxDepositBillsPerSession());
             atm->RequestCashTransfer(destination, cash);
+            globalDestinationAccount = nullptr;
             break;
         }
         case 5:
@@ -889,7 +907,12 @@ void RunConsole(SystemState& state) {
             ++state.totalSessions;
             ++state.adminSessions;
             atm->IncrementAdminSession();
+            globalCurrentATM = atm;
+            globalCurrentAccount = nullptr;
+            globalLanguage = atm->GetActiveLanguage();
             RunAdminMenu(atm, state.banks, state.atms, atm->GetActiveLanguage());
+            globalCurrentATM = nullptr;
+            globalCurrentAccount = nullptr;
             atm->EndSession();
             continue;
             
@@ -945,7 +968,12 @@ void RunConsole(SystemState& state) {
         }
 
         atm->IncrementCustomerSession();
+        globalCurrentATM = atm;
+        globalCurrentAccount = verifiedAccount;
+        globalLanguage = atm->GetActiveLanguage();
         RunAtmMenu(atm, state.accounts, state.banks, state.banksByName, state.atms);
+        globalCurrentATM = nullptr;
+        globalCurrentAccount = nullptr;
     }
 }
 
