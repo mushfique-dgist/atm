@@ -3,6 +3,8 @@
 
 #include <string>
 #include <vector>
+#include <sstream>
+#include <iomanip>
 
 class Bank;
 class Card;
@@ -30,6 +32,7 @@ public:
     bool checkPassword(const std::string& password) const;
 
 private:
+    static std::string hashPassword(const std::string& password);
     Bank* bank_;
     std::string ownerName_;
     std::string accountNumber_;

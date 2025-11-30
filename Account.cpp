@@ -1,6 +1,7 @@
 #include "Account.hpp"
 
 #include "Bank.hpp"
+#include <openssl/sha.h>
 
 Account::Account(Bank* owningBank,
                  const std::string& ownerName,
@@ -13,7 +14,7 @@ Account::Account(Bank* owningBank,
       accountNumber_(accountNumber),
       balance_(initialFunds >= 0 ? initialFunds : 0),
       accountCard_(linkedCard),
-      password_(password) {
+      password_(hashPassword(password)) {
 }
 
 const std::string& Account::getAccountNumber() const {
@@ -69,5 +70,18 @@ void Account::recordTransaction(Transaction* accountTransaction) {
 }
 
 bool Account::checkPassword(const std::string& enteredPassword) const {
-    return password_ == enteredPassword;
+    return password_ == hashPassword(enteredPassword);
+}
+
+std::string Account::hashPassword(const std::string& password) {
+    unsigned char hash[SHA256_DIGEST_LENGTH];
+    SHA256(reinterpret_cast<const unsigned char*>(password.c_str()), 
+           password.length(), hash);
+    
+    std::ostringstream oss;
+    for (int i = 0; i < SHA256_DIGEST_LENGTH; ++i) {
+        oss << std::hex << std::setw(2) << std::setfill('0') 
+            << static_cast<int>(hash[i]);
+    }
+    return oss.str();
 }

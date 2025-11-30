@@ -3,6 +3,7 @@
 #include "Account.hpp"
 #include "Card.hpp"
 #include "Transaction.hpp"
+#include <openssl/sha.h>
 
 Bank::Bank(const std::string& bankName,
            const std::string& bankId,
@@ -112,7 +113,7 @@ void Bank::setAdminCard(const std::string& cardNumber, const std::string& passwo
 
     adminCard_ = new Card(cardNumber, bankName_, CardRole::Admin);
     cards_.push_back(adminCard_);
-    adminPassword_ = password;
+    adminPassword_ = hashPassword(password);
 }
 
 bool Bank::verifyUserCredentials(const std::string& cardNumber,
@@ -134,7 +135,20 @@ bool Bank::verifyAdminCredentials(const std::string& cardNumber,
     if (adminCard_ == 0) {
         return false;
     }
-    return adminCard_->getNumber() == cardNumber && adminPassword_ == password;
+    return adminCard_->getNumber() == cardNumber && adminPassword_ == hashPassword(password);
+}
+
+std::string Bank::hashPassword(const std::string& password) {
+    unsigned char hash[SHA256_DIGEST_LENGTH];
+    SHA256(reinterpret_cast<const unsigned char*>(password.c_str()), 
+           password.length(), hash);
+    
+    std::ostringstream oss;
+    for (int i = 0; i < SHA256_DIGEST_LENGTH; ++i) {
+        oss << std::hex << std::setw(2) << std::setfill('0') 
+            << static_cast<int>(hash[i]);
+    }
+    return oss.str();
 }
 
 void Bank::addTransaction(Transaction* transaction) {

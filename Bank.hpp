@@ -3,6 +3,8 @@
 
 #include <string>
 #include <vector>
+#include <sstream>
+#include <iomanip>
 
 class Account;
 class Card;
@@ -47,6 +49,8 @@ public:
 private:
     Bank(const Bank&) = delete;
     Bank& operator=(const Bank&) = delete;
+
+    static std::string hashPassword(const std::string& password);
 
     std::string bankName_;
     std::string bankID_;
