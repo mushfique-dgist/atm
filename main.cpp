@@ -639,10 +639,16 @@ void RunAdminMenu(ATM* atm,
                 break;
             }
             fout << "/\n";
-            fout << "This ATM sessions: " << totalSessions
-                 << " (customer " << customerSessions
-                 << ", admin " << adminSessions << ")\n";
-            PrintTransactions(transactions, fout, ATMLanguage_English);
+            if (lang == ATMLanguage_English) {
+                fout << "This ATM sessions: " << totalSessions
+                     << " (customer " << customerSessions
+                     << ", admin " << adminSessions << ")\n";
+            } else {
+                fout << "이 ATM 세션 수: " << totalSessions
+                     << " (고객 " << customerSessions
+                     << ", 관리자 " << adminSessions << ")\n";
+            }
+            PrintTransactions(transactions, fout, lang);
             std::cout << T(lang, "Transactions exported to ", "거래 내역을 파일로 저장했습니다: ") << filename << "\n";
             break;
         }
