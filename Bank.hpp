@@ -50,8 +50,8 @@ private:
 
     std::string bankName_;
     std::string bankID_;
-    std::vector<Account*> accounts_; // Non-owning pointers to accounts registered with this bank.
-    std::vector<Card*> cards_;       // Non-owning pointers; cards are owned by their account or adminCard_.
+    std::vector<Account*> accounts_;
+    std::vector<Card*> cards_;
     std::vector<Bank*>* allBanks_;
     std::vector<Transaction*>* transactions_;
     Card* adminCard_;

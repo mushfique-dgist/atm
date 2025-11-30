@@ -3,9 +3,6 @@
 
 #include <string>
 
-// Card represents a simple credential token for ATM access.
-// It holds the card number, the bank name, and a role (user/admin).
-// The PIN/password is stored with the owning Account/Bank, not in this class.
 enum class CardRole { User, Admin };
 
 class Card {

@@ -388,7 +388,6 @@ void PrintTransactions(const std::vector<Transaction*>& transactions,
         out << "  " << T(lang, "Fee", "수수료") << ": " << transaction->getFee() << "\n";
         out << "  " << T(lang, "From", "출금 계좌") << ": " << transaction->getSourceBankName()
             << " / " << transaction->getSourceAccountNumber() << "\n";
-        // If it is a transfer, show target info via dynamic_cast
         if (const AccountTransferTransaction* at =
                 dynamic_cast<const AccountTransferTransaction*>(transaction)) {
             out << "  " << T(lang, "To", "입금 계좌") << ": " << at->getTargetBankName()

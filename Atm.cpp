@@ -39,7 +39,7 @@ bool BuildWithdrawalBundle(long long amount, const CashDrawer& inventory, CashDr
     return remaining == 0;
 }
 
-} // namespace
+}
 
 ATMFees ATMFees::CreateDefault() {
     ATMFees fees;
