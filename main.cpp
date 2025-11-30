@@ -163,26 +163,44 @@ Bank* FindBank(const std::map<std::string, Bank*>& banksByName, const std::strin
     return (it != banksByName.end()) ? it->second : nullptr;
 }
 
-Account* FindAccountByCard(const std::vector<Account*>& accounts, const std::string& cardNumber) {
-    for (std::size_t i = 0; i < accounts.size(); ++i) {
-        Account* account = accounts[i];
-        if (account == nullptr) {
-            continue;
+Account* FindAccountByCard(ATM* atm, const std::map<std::string, Bank*>& banksByName, const std::string& cardNumber) {
+    // 1. Search primary bank of ATM first
+    Bank* primaryBank = atm->GetPrimaryBank();
+    if (primaryBank != nullptr) {
+        Account* account = primaryBank->findAccountByCardNumber(cardNumber);
+        if (account != nullptr) {
+            return account;
         }
-        Card* linkedCard = account->getLinkedCard();
-        if (linkedCard != nullptr && linkedCard->getNumber() == cardNumber) {
+    }
+    if (atm->GetBankAccessMode() == ATMBankAccess_SingleBank) {
+        return nullptr; // No need to search other banks in single-bank mode
+    }
+    
+    // 2. Search other banks
+    for (auto it = banksByName.begin(); it != banksByName.end(); ++it) {
+        Bank* bank = it->second;
+        if (bank == primaryBank) {
+            continue; // Skip primary bank already searched
+        }
+        Account* account = bank->findAccountByCardNumber(cardNumber);
+        if (account != nullptr) {
             return account;
         }
     }
     return nullptr;
 }
 
-Account* FindAccountByNumber(const std::vector<Account*>& accounts, const std::string& accountNumber) {
-    for (std::size_t i = 0; i < accounts.size(); ++i) {
-        Account* account = accounts[i];
-        if (account != nullptr && account->getAccountNumber() == accountNumber) {
+Account* FindAccountByNumber(ATM* atm, const std::map<std::string, Bank*>& banksByName, const std::string& accountNumber) {
+    // 1. Search primary bank of ATM first
+    Bank* primaryBank = atm->GetPrimaryBank();
+    if (primaryBank != nullptr) {
+        Account* account = primaryBank->findAccountByAccountNumber(accountNumber);
+        if (account != nullptr) {
             return account;
         }
+        
+        // 2. Search other banks through primary bank
+        return primaryBank->findAccountInOtherBanks(accountNumber);
     }
     return nullptr;
 }
@@ -647,6 +665,7 @@ void RunAdminMenu(ATM* atm,
 void RunAtmMenu(ATM* atm,
                 const std::vector<Account*>& accounts,
                 const std::vector<Bank*>& banks,
+                const std::map<std::string, Bank*>& banksByName,
                 const std::vector<ATM*>& atms) {
     if (atm == nullptr) {
         return;
@@ -725,7 +744,7 @@ void RunAtmMenu(ATM* atm,
         }
         case 3: {
             std::string targetAccount = PromptString(T(lang, "Enter destination account number: ", "상대 계좌 번호를 입력하세요: "));
-            Account* destination = FindAccountByNumber(accounts, targetAccount);
+            Account* destination = FindAccountByNumber(atm, banksByName, targetAccount);
             if (destination == nullptr) {
                 std::cout << T(lang, "Account not found.\n", "계좌를 찾을 수 없습니다.\n");
                 break;
@@ -736,7 +755,7 @@ void RunAtmMenu(ATM* atm,
         }
         case 4: {
             std::string targetAccount = PromptString(T(lang, "Enter destination account number: ", "상대 계좌 번호를 입력하세요: "));
-            Account* destination = FindAccountByNumber(accounts, targetAccount);
+            Account* destination = FindAccountByNumber(atm, banksByName, targetAccount);
             if (destination == nullptr) {
                 std::cout << T(lang, "Account not found.\n", "계좌를 찾을 수 없습니다.\n");
                 break;
@@ -872,7 +891,7 @@ void RunConsole(SystemState& state) {
             
         }
 
-        Account* initialAccount = FindAccountByCard(state.accounts, cardNumber);
+        Account* initialAccount = FindAccountByCard(atm, state.banksByName, cardNumber);
         if (initialAccount == nullptr) {
             std::cout << T(langChoice, "Card not recognized.\n", "인식되지 않는 카드입니다.\n");
             atm->StartCustomerSession(nullptr, nullptr, false);
@@ -922,7 +941,7 @@ void RunConsole(SystemState& state) {
         }
 
         atm->IncrementCustomerSession();
-        RunAtmMenu(atm, state.accounts, state.banks, state.atms);
+        RunAtmMenu(atm, state.accounts, state.banks, state.banksByName, state.atms);
     }
 }
 
