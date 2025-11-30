@@ -279,13 +279,14 @@ void PrintSnapshot(const std::vector<Bank*>& banks, const std::vector<ATM*>& atm
         // Mark current ATM with text
         std::string marker = (atm == globalCurrentATM) ? T(lang, " (currently in use)", " (현재 사용 중)") : "";
         
-        std::cout << bankName << " ATM [SN:" << atm->GetSerialNumber() << "]" << marker << " "
+        std::cout << bankName << " ATM [SN:" << atm->GetSerialNumber() << "] "
                   << T(lang, "Remaining cash: ", "잔여 현금: ") << totalCash
                   << T(lang, " | Left cash: ", " | 남은 지폐: ")
                   << count1k << T(lang, " x 1,000 won, ", " x 1,000원, ")
                   << count5k << T(lang, " x 5,000 won, ", " x 5,000원, ")
                   << count10k << T(lang, " x 10,000 won, ", " x 10,000원, ")
-                  << count50k << T(lang, " x 50,000 won", " x 50,000원") << "\n";
+                  << count50k << T(lang, " x 50,000 won", " x 50,000원")
+                  << marker << "\n";
     }
 
     std::cout << "\n" << T(lang, "Accounts (remaining balance):", "계좌 (잔액):") << "\n";
@@ -312,7 +313,8 @@ void PrintSnapshot(const std::vector<Bank*>& banks, const std::vector<ATM*>& atm
                       << T(lang, "Bank", "은행") << ": " << bank->getBankName()
                       << ", " << T(lang, "No.", "번호") << " " << account->getAccountNumber()
                       << ", " << T(lang, "Owner", "소유자") << ": " << account->getOwnerName()
-                      << "]" << marker << " " << T(lang, "Balance", "잔액") << " : " << account->getBalance() << "\n";
+                      << "] " << T(lang, "Balance", "잔액") << " : " << account->getBalance()
+                      << marker << "\n";
         }
     }
 
