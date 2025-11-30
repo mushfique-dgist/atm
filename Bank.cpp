@@ -7,12 +7,13 @@ std::hash<std::string> Bank::passwordhasher;
 
 Bank::Bank(const std::string& bankName,
            const std::string& bankId,
-           std::vector<Bank*>* allBanks,
+           std::map<std::string, Bank*>* allBanks,
            std::vector<Transaction*>* transactions)
     : bankName_(bankName),
       bankID_(bankId),
-      accounts_(),
-      cards_(),
+      accountsByNumber_(),
+      accountsByCard_(),
+      cardsByNumber_(),
       allBanks_(allBanks),
       transactions_(transactions),
       adminCard_(0),
@@ -34,12 +35,22 @@ const std::string& Bank::getBankID() const {
     return bankID_;
 }
 
-const std::vector<Account*>& Bank::getAccounts() const {
-    return accounts_;
+std::vector<Account*> Bank::getAccounts() const {
+    std::vector<Account*> result;
+    result.reserve(accountsByNumber_.size());
+    for (const auto& pair : accountsByNumber_) {
+        result.push_back(pair.second);
+    }
+    return result;
 }
 
-const std::vector<Card*>& Bank::getCards() const {
-    return cards_;
+std::vector<Card*> Bank::getCards() const {
+    std::vector<Card*> result;
+    result.reserve(cardsByNumber_.size());
+    for (const auto& pair : cardsByNumber_) {
+        result.push_back(pair.second);
+    }
+    return result;
 }
 
 void Bank::addAccount(Account* account) {
@@ -47,52 +58,29 @@ void Bank::addAccount(Account* account) {
         return;
     }
 
-    for (const Account* existing : accounts_) {
-        if (existing != nullptr &&
-            existing->getAccountNumber() == account->getAccountNumber()) {
-            return;
-        }
+    const std::string& accountNumber = account->getAccountNumber();
+    if (accountsByNumber_.find(accountNumber) != accountsByNumber_.end()) {
+        return; // Account already exists
     }
 
-    accounts_.push_back(account);
+    accountsByNumber_[accountNumber] = account;
 
     Card* linkedCard = account->getLinkedCard();
-    if (linkedCard == nullptr) {
-        return;
-    }
-
-    bool found = false;
-    for (std::size_t i = 0; i < cards_.size(); ++i) {
-        if (cards_[i] == linkedCard) {
-            found = true;
-            break;
-        }
-    }
-    if (!found) {
-        cards_.push_back(linkedCard);
+    if (linkedCard != nullptr) {
+        const std::string& cardNumber = linkedCard->getNumber();
+        accountsByCard_[cardNumber] = account;
+        cardsByNumber_[cardNumber] = linkedCard;
     }
 }
 
 Account* Bank::findAccountByAccountNumber(const std::string& accountNumber) const {
-    for (Account* account : accounts_) {
-        if (account != nullptr && account->getAccountNumber() == accountNumber) {
-            return account;
-        }
-    }
-    return nullptr;
+    auto it = accountsByNumber_.find(accountNumber);
+    return (it != accountsByNumber_.end()) ? it->second : nullptr;
 }
 
 Account* Bank::findAccountByCardNumber(const std::string& cardNumber) const {
-    for (Account* account : accounts_) {
-        if (account == nullptr) {
-            continue;
-        }
-        Card* card = account->getLinkedCard();
-        if (card != nullptr && card->getNumber() == cardNumber) {
-            return account;
-        }
-    }
-    return nullptr;
+    auto it = accountsByCard_.find(cardNumber);
+    return (it != accountsByCard_.end()) ? it->second : nullptr;
 }
 
 void Bank::setAdminCard(const std::string& cardNumber, const std::string& password) {
@@ -101,18 +89,13 @@ void Bank::setAdminCard(const std::string& cardNumber, const std::string& passwo
     }
 
     if (adminCard_ != 0) {
-        for (std::size_t i = 0; i < cards_.size(); ++i) {
-            if (cards_[i] == adminCard_) {
-                cards_.erase(cards_.begin() + static_cast<long>(i));
-                break;
-            }
-        }
+        cardsByNumber_.erase(adminCard_->getNumber());
         delete adminCard_;
         adminCard_ = 0;
     }
 
     adminCard_ = new Card(cardNumber, bankName_, CardRole::Admin);
-    cards_.push_back(adminCard_);
+    cardsByNumber_[cardNumber] = adminCard_;
     adminPassword_ = passwordhasher(password);
 }
 
@@ -145,11 +128,11 @@ void Bank::addTransaction(Transaction* transaction) {
     transactions_->push_back(transaction);
 }
 
-void Bank::setAllBanks(std::vector<Bank*>* allBanks) {
+void Bank::setAllBanks(std::map<std::string, Bank*>* allBanks) {
     allBanks_ = allBanks;
 }
 
-std::vector<Bank*>* Bank::getAllBanks() const {
+std::map<std::string, Bank*>* Bank::getAllBanks() const {
     return allBanks_;
 }
 

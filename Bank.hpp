@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 #include <functional>
 
 class Account;
@@ -13,15 +14,15 @@ class Bank {
 public:
     Bank(const std::string& bankName,
          const std::string& bankId,
-         std::vector<Bank*>* allBanks,
+         std::map<std::string, Bank*>* allBanks,
          std::vector<Transaction*>* transactions);
 
     ~Bank();
 
     const std::string& getBankName() const;
     const std::string& getBankID() const;
-    const std::vector<Account*>& getAccounts() const;
-    const std::vector<Card*>& getCards() const;
+    std::vector<Account*> getAccounts() const;
+    std::vector<Card*> getCards() const;
 
     void addAccount(Account* account);
     Account* findAccountByAccountNumber(const std::string& accountNumber) const;
@@ -35,8 +36,8 @@ public:
                                 const std::string& password) const;
 
     void addTransaction(Transaction* transaction);
-    void setAllBanks(std::vector<Bank*>* allBanks);
-    std::vector<Bank*>* getAllBanks() const;
+    void setAllBanks(std::map<std::string, Bank*>* allBanks);
+    std::map<std::string, Bank*>* getAllBanks() const;
 
     bool deposit(Account* account, long long amount);
     bool withdraw(Account* account, long long amount);
@@ -52,9 +53,10 @@ private:
 
     std::string bankName_;
     std::string bankID_;
-    std::vector<Account*> accounts_; // Non-owning pointers to accounts registered with this bank.
-    std::vector<Card*> cards_;       // Non-owning pointers; cards are owned by their account or adminCard_.
-    std::vector<Bank*>* allBanks_;
+    std::map<std::string, Account*> accountsByNumber_; // Key: account number
+    std::map<std::string, Account*> accountsByCard_;    // Key: card number
+    std::map<std::string, Card*> cardsByNumber_;        // Key: card number
+    std::map<std::string, Bank*>* allBanks_;
     std::vector<Transaction*>* transactions_;
     Card* adminCard_;
     std::size_t adminPassword_;

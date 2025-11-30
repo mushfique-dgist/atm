@@ -2,6 +2,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <map>
 #include <functional>
 
 #include "Account.hpp"
@@ -11,7 +12,8 @@
 #include "Atm.hpp"
 
 struct SystemState {
-    std::vector<Bank*> banks;
+    std::vector<Bank*> banks;                  // Maintains insertion order
+    std::map<std::string, Bank*> banksByName;  // Fast lookup by name
     std::vector<Account*> accounts;
     std::vector<Card*> cards;
     std::vector<ATM*> atms;
@@ -156,13 +158,9 @@ void PrintMainMenu() {
     std::cout << "========================================\n";
 }
 
-Bank* FindBank(const std::vector<Bank*>& banks, const std::string& name) {
-    for (Bank* bank : banks) {
-        if (bank != nullptr && bank->getBankName() == name) {
-            return bank;
-        }
-    }
-    return nullptr;
+Bank* FindBank(const std::map<std::string, Bank*>& banksByName, const std::string& name) {
+    auto it = banksByName.find(name);
+    return (it != banksByName.end()) ? it->second : nullptr;
 }
 
 Account* FindAccountByCard(const std::vector<Account*>& accounts, const std::string& cardNumber) {
@@ -242,7 +240,8 @@ void PrintSnapshot(const std::vector<Bank*>& banks, const std::vector<ATM*>& atm
     std::cout << "\n=== " << T(lang, "Snapshot", "스냅샷") << " ===\n";
 
     std::cout << T(lang, "ATMs (remaining cash):", "ATM (잔여 현금):") << "\n";
-    for (const ATM* atm : atms) {
+    for (std::size_t i = 0; i < atms.size(); ++i) {
+        const ATM* atm = atms[i];
         if (atm == nullptr) {
             continue;
         }
@@ -266,11 +265,14 @@ void PrintSnapshot(const std::vector<Bank*>& banks, const std::vector<ATM*>& atm
     }
 
     std::cout << "\n" << T(lang, "Accounts (remaining balance):", "계좌 (잔액):") << "\n";
-    for (const Bank* bank : banks) {
+    for (std::size_t i = 0; i < banks.size(); ++i) {
+        const Bank* bank = banks[i];
         if (bank == nullptr) {
             continue;
         }
-        for (Account* account : bank->getAccounts()) {
+        std::vector<Account*> accounts = bank->getAccounts();
+        for (std::size_t j = 0; j < accounts.size(); ++j) {
+            Account* account = accounts[j];
             if (account == nullptr) {
                 continue;
             }
@@ -443,8 +445,9 @@ bool LoadInitialData(const std::string& filename, SystemState& state) {
     for (int i = 0; i < bankCount; ++i) {
         std::string bankName;
         fin >> bankName;
-        auto* bank = new Bank(bankName, bankName, &state.banks, &state.transactions);
+        Bank* bank = new Bank(bankName, bankName, &state.banksByName, &state.transactions);
         state.banks.push_back(bank);
+        state.banksByName[bankName] = bank;
     }
 
     for (int i = 0; i < accountCount; ++i) {
@@ -456,13 +459,13 @@ bool LoadInitialData(const std::string& filename, SystemState& state) {
         std::string password;
         fin >> bankName >> userName >> accountNumber >> availableFunds >> cardNumber >> password;
 
-        Bank* bank = FindBank(state.banks, bankName);
+        Bank* bank = FindBank(state.banksByName, bankName);
         if (bank == nullptr) {
             std::cerr << "Bank " << bankName << " not found for account " << accountNumber << ".\n";
             return false;
         }
-        auto* card = new Card(cardNumber, bankName, CardRole::User);
-        auto* account = new Account(bank, userName, accountNumber, availableFunds, card, password);
+        Card* card = new Card(cardNumber, bankName, CardRole::User);
+        Account* account = new Account(bank, userName, accountNumber, availableFunds, card, password);
 
         state.cards.push_back(card);
         state.accounts.push_back(account);
@@ -476,7 +479,7 @@ bool LoadInitialData(const std::string& filename, SystemState& state) {
         std::string languageStr;
         fin >> primaryBankName >> serial >> accessModeStr >> languageStr;
 
-        Bank* primaryBank = FindBank(state.banks, primaryBankName);
+        Bank* primaryBank = FindBank(state.banksByName, primaryBankName);
         if (primaryBank == nullptr) {
             std::cerr << "Primary bank " << primaryBankName << " not found for ATM " << serial << ".\n";
             return false;
@@ -486,7 +489,7 @@ bool LoadInitialData(const std::string& filename, SystemState& state) {
             (accessModeStr == "Single") ? ATMBankAccess_SingleBank : ATMBankAccess_MultiBank;
         bool bilingual = (languageStr == "Bilingual");
 
-        auto* atm = new ATM(serial, primaryBank, accessMode, bilingual);
+        ATM* atm = new ATM(serial, primaryBank, accessMode, bilingual);
 
         int count50k = 0;
         int count10k = 0;
@@ -501,8 +504,8 @@ bool LoadInitialData(const std::string& filename, SystemState& state) {
         atm->LoadCash(drawer);
 
         if (accessMode == ATMBankAccess_MultiBank) {
-            for (Bank* bank : state.banks) {
-                atm->AddAcceptedBank(bank);
+            for (const auto& pair : state.banksByName) {
+                atm->AddAcceptedBank(pair.second);
             }
         }
 
@@ -526,7 +529,8 @@ bool isCardInSystem(const SystemState& state, const std::string& cardNumber) {
 
 void ConfigureAdminCards(SystemState& state) {
     std::cout << "\n=== Admin Card Setup ===\n";
-    for (Bank* bank : state.banks) {
+    for (std::size_t i = 0; i < state.banks.size(); ++i) {
+        Bank* bank = state.banks[i];
         if (bank == nullptr) {
             continue;
         }
@@ -938,15 +942,16 @@ void Cleanup(SystemState& state) {
     }
     state.accounts.clear();
 
-    for (Card* card : state.cards) {
-        delete card;
+    for (std::size_t i = 0; i < state.cards.size(); ++i) {
+        delete state.cards[i];
     }
     state.cards.clear();
 
-    for (Bank* bank : state.banks) {
-        delete bank;
+    for (std::size_t i = 0; i < state.banks.size(); ++i) {
+        delete state.banks[i];
     }
     state.banks.clear();
+    state.banksByName.clear();
 }
 
 int main() {
