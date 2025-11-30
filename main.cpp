@@ -456,6 +456,15 @@ void PrintTransactions(const std::vector<Transaction*>& transactions,
     out << "========================================\n";
 }
 
+bool isCardInSystem(const SystemState& state, const std::string& cardNumber) {
+    for (const Card* card : state.cards) {
+        if (cardNumber == card->getNumber()) {
+            return true;
+        }
+    }
+    return false;
+}
+
 bool LoadInitialData(const std::string& filename, SystemState& state) {
     std::ifstream fin(filename);
     if (!fin) {
@@ -496,6 +505,13 @@ bool LoadInitialData(const std::string& filename, SystemState& state) {
             std::cerr << "Bank " << bankName << " not found for account " << accountNumber << ".\n";
             return false;
         }
+        
+        // Check for duplicate card number
+        if (isCardInSystem(state, cardNumber)) {
+            std::cerr << "Error: Duplicate card number " << cardNumber << " detected.\n";
+            return false;
+        }
+        
         Card* card = new Card(cardNumber, bankName, CardRole::User);
         Account* account = new Account(bank, userName, accountNumber, availableFunds, card, password);
 
@@ -545,15 +561,6 @@ bool LoadInitialData(const std::string& filename, SystemState& state) {
     }
 
     return true;
-}
-
-bool isCardInSystem(const SystemState& state, const std::string& cardNumber) {
-    for (const Card* card : state.cards) {
-        if (cardNumber == card->getNumber()) {
-            return true;
-        }
-    }
-    return false;
 }
 
 } // namespace
@@ -1017,13 +1024,17 @@ int main() {
         std::cout << "Initial data loaded successfully from " << path << ".\n";
     } 
     else {
-        std::cout << "Failed to load initial data from " << path << ". Using default sample data.\n";
+        std::cout << "Failed to load initial data from " << path << ".\n";
+        std::cout << "Switching to default sample data (sample_initial_condition.txt)...\n";
+        // Clear the state before loading default data
+        Cleanup(state);
+        state = SystemState();
         success = LoadInitialData("sample_initial_condition.txt", state);
         if (!success) {
             std::cerr << "Critical error: Cannot load default sample data. Exiting.\n";
             return 1;
         }
-        std::cout << "Default data loaded successfully.\n";
+        std::cout << "Default data loaded successfully from sample_initial_condition.txt.\n";
     }
     globalSystemState = state;
     PrintWelcomeBanner();
