@@ -2,6 +2,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <functional>
 
 #include "Account.hpp"
 #include "Bank.hpp"
@@ -221,7 +222,7 @@ CashDrawer PromptCashDrawer(const std::string& label, int maxBills) {
 
     std::cout << T(globalLanguage, 
         "Enter bills for " + label + " (use non-negative integers).\n",
-         "지폐 개수를 입력하세요 " + label + " (음수가 아닌 정수를 사용하세요).");
+         "지폐 개수를 입력하세요 " + label + " (음수가 아닌 정수를 사용하세요).\n");
     int count50k = PromptIntWithMax(T(globalLanguage, "50,000 KRW bills: ", "50,000원 지폐: "), 0, maxBills);
     maxBills -= count50k;
     int count10k = PromptIntWithMax(T(globalLanguage, "10,000 KRW bills: ", "10,000원 지폐: "), 0, maxBills);
@@ -522,22 +523,29 @@ bool isCardInSystem(const SystemState& state, const std::string& cardNumber) {
 
 } // namespace
 
+
 void ConfigureAdminCards(SystemState& state) {
     std::cout << "\n=== Admin Card Setup ===\n";
     for (Bank* bank : state.banks) {
         if (bank == nullptr) {
             continue;
         }
-        std::cout << "Configuring admin card for bank: " << bank->getBankName() << "\n";
-        std::string adminCardNumber = PromptString("  Enter a unique admin card number: ");
-        while (true) {
+        std::cout << "Configuring admin card for bank:" << bank->getBankName() << "\n";
+        std::string adminCardNumber = PromptString("  Enter an admin card number: ");
+        while (adminCardNumber== "/") {
+            adminCardNumber = PromptString("  Enter an admin card number: ");
+        }
+        while (true) {    
             if (!isCardInSystem(state, adminCardNumber)) {
                 break;
             }
             std::cout << "  Card number already exists. Please enter a different admin card number.\n";
-            adminCardNumber = PromptString(" Enter a unique admin card number: ");
+            adminCardNumber = PromptString(" Enter an unique admin card number: ");
         }
-        std::string adminPassword = PromptString(" Enter a unique admin password/PIN: ");
+        std::string adminPassword = PromptString(" Enter an admin password/PIN: ");
+        while (adminPassword== "/") {
+            adminPassword = PromptString(" Enter an admin password/PIN: ");
+        }
         bank->setAdminCard(adminCardNumber, adminPassword);
         state.cards.push_back(new Card(adminCardNumber, bank->getBankName(), CardRole::Admin));
     }
@@ -553,19 +561,18 @@ void RunAdminMenu(ATM* atm,
     int customerSessions = atm->GetCustomerSessions();
     int adminSessions = atm->GetAdminSessions();
     while (true) {
-        std::cout << "\n========================================\n";
-        std::cout << "              ADMIN MENU                \n";
-        std::cout << "========================================\n";
-        std::cout << "  [1] " << T(lang, "Print all transactions", "모든 거래 출력") << "\n";
-        std::cout << "  [2] " << T(lang, "Export transactions to file", "거래 내역 파일로 저장") << "\n";
-        std::cout << "  [/] " << T(lang, "Snapshot", "스냅샷") << "\n";
-        std::cout << "  [0] " << T(lang, "Exit admin menu", "관리자 메뉴 종료") << "\n";
-        std::cout << "========================================\n";
-        std::string choiceInput = PromptString(T(lang, "Select an option: ", "옵션을 선택하세요: "));
-        if (choiceInput == "/") {
-            PrintSnapshot(banks, atms, lang);
-            continue;
+        std::cout << "\n========================================"<<std::endl;
+        std::cout << "              ADMIN MENU                "<<std::endl;
+        std::cout << "========================================"<<std::endl;
+        std::cout << "  [1] " << T(lang, "Print all transactions", "모든 거래 출력") <<std::endl;
+        std::cout << "  [2] " << T(lang, "Export transactions to file", "거래 내역 파일로 저장") << std::endl;
+        if (atm->IsBilingual()){
+            std::cout << "  [3] " << T(lang, "Change language", "언어 변경") << std::endl;
         }
+        std::cout << "  [/] " << T(lang, "Snapshot", "스냅샷") << std::endl;
+        std::cout << "  [0] " << T(lang, "Exit admin menu", "관리자 메뉴 종료") << std::endl;
+        std::cout << "========================================"<<std::endl;
+        std::string choiceInput = PromptString(T(lang, "Select an option: ", "옵션을 선택하세요: "));
         int choice = 0;
         {
             bool parsed = false;
@@ -620,6 +627,13 @@ void RunAdminMenu(ATM* atm,
             break;
         }
         default:
+            if (choice == 3 && atm->IsBilingual()) {
+                ATMLanguage newLang = SelectLanguageForAtm(atm);
+                lang = newLang;
+                globalLanguage = newLang;
+                std::cout << T(lang, "Language changed.\n", "언어가 변경되었습니다.\n");
+                continue;
+            }
             std::cout << T(lang, "Unknown choice.\n", "알 수 없는 선택입니다.\n");
             break;
         }
@@ -730,6 +744,8 @@ void RunAtmMenu(ATM* atm,
         case 5:
             atm->PrintReceipt(std::cout);
             break;
+        case '/':
+            break;
         case 6:
             if (atm->IsBilingual()){
                 ATMLanguage newLang = SelectLanguageForAtm(atm);
@@ -737,17 +753,12 @@ void RunAtmMenu(ATM* atm,
                 lang = newLang;
                 globalLanguage = newLang;
                 std::cout << T(lang, "Language changed.\n", "언어가 변경되었습니다.\n");
+                break;
             }
-            break;
-        case '/':
-            break;
         default:
             std::cout << T(lang, "Unknown option.\n", "알 수 없는 선택입니다.\n");
             break;
         }
-        
-           
-
         if (!atm->HasActiveSession()) {
             std::cout << T(lang, "Session ended due to an error.\n", "오류로 인해 세션이 종료되었습니다.\n");
             break;
@@ -822,7 +833,6 @@ void RunConsole(SystemState& state) {
         if (cardNumber == "/cancel") {
             continue;
         }
-
         if (atm->GetPrimaryBank()->isAdminCard(cardNumber)){
              Bank* primaryBank = atm->GetPrimaryBank();
             if (primaryBank == nullptr) {
@@ -843,14 +853,12 @@ void RunConsole(SystemState& state) {
                 std::cout << T(langChoice, "Wrong admin credentials.\n", "관리자 정보가 올바르지 않습니다.\n");
                 ++attempts;
             }
-
             if (!authenticated) {
                 std::cout << T(langChoice, "Admin authentication failed. Returning to main menu.\n",
                                "관리자 인증에 실패했습니다. 메인 메뉴로 돌아갑니다.\n");
                 atm->EndSession();
                 continue;
             }
-
             ++state.totalSessions;
             ++state.adminSessions;
             atm->IncrementAdminSession();
@@ -943,9 +951,25 @@ void Cleanup(SystemState& state) {
 
 int main() {
     SystemState state;
-    if (!LoadInitialData("sample_initial_condition.txt", state)) {
-        return 1;
+    std::cout << "Loading initial data from file..."<<std::endl;
+    std::cout<< "If the file input was not appropriately prepared, prepared data will be provided." <<std::endl;
+    std:: cout << "Enter the path to the initial data file: ";
+    std::string path;
+    std::cin >> path;
+    bool success = LoadInitialData(path, state);
+    if (success) {
+        std::cout << "Initial data loaded successfully from " << path << ".\n";
+    } 
+    else {
+        std::cout << "Failed to load initial data from " << path << ". Using default sample data.\n";
+        success = LoadInitialData("sample_initial_condition.txt", state);
+        if (!success) {
+            std::cerr << "Critical error: Cannot load default sample data. Exiting.\n";
+            return 1;
+        }
+        std::cout << "Default data loaded successfully.\n";
     }
+    globalSystemState = state;
     PrintWelcomeBanner();
     ConfigureAdminCards(state);
     globalSystemState = state;

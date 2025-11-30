@@ -29,6 +29,7 @@ public:
     void recordTransaction(Transaction* accountTransaction);
     bool checkPassword(const std::string& password) const;
 
+
 private:
     Bank* bank_;
     std::string ownerName_;
