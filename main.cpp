@@ -94,7 +94,7 @@ void PrintWelcomeBanner() {
     std::cout << "========================================\n";
     std::cout << "         DGIST ATM SIMULATOR            \n";
     std::cout << "========================================\n";
-    std::cout << "Load sample_initial_condition.txt, then\n";
+    std::cout << "Load initial_condition.txt, then\n";
     std::cout << "enter admin cards/PINs for each bank.\n";
     std::cout << "----------------------------------------\n\n";
 }
@@ -201,6 +201,18 @@ CashDrawer PromptCashDrawer(ATMLanguage lang, const std::string& label) {
 
 void PrintSnapshot(const std::vector<Bank*>& banks, const std::vector<ATM*>& atms, ATMLanguage lang = ATMLanguage_English) {
     std::cout << "\n=== " << T(lang, "Snapshot", "스냅샷") << " ===\n";
+    std::vector<Account*> activeAccounts;
+    for (const ATM* atm : atms) {
+        if (atm == nullptr) {
+            continue;
+        }
+        if (atm->HasActiveSession() && atm->GetActiveMode() == ATMMode_Customer) {
+            const SessionState& state = atm->GetSessionState();
+            if (state.primaryAccount != nullptr) {
+                activeAccounts.push_back(state.primaryAccount);
+            }
+        }
+    }
 
     std::cout << T(lang, "ATMs (remaining cash):", "ATM (잔여 현금):") << "\n";
     for (const ATM* atm : atms) {
@@ -235,11 +247,22 @@ void PrintSnapshot(const std::vector<Bank*>& banks, const std::vector<ATM*>& atm
             if (account == nullptr) {
                 continue;
             }
+            bool isActive = false;
+            for (Account* active : activeAccounts) {
+                if (active == account) {
+                    isActive = true;
+                    break;
+                }
+            }
             std::cout << T(lang, "Account", "계좌") << " ["
                       << T(lang, "Bank", "은행") << ": " << bank->getBankName()
                       << ", " << T(lang, "No.", "번호") << " " << account->getAccountNumber()
                       << ", " << T(lang, "Owner", "소유자") << ": " << account->getOwnerName()
-                      << "] " << T(lang, "Balance", "잔액") << " : " << account->getBalance() << "\n";
+                      << "] " << T(lang, "Balance", "잔액") << " : " << account->getBalance();
+            if (isActive) {
+                std::cout << T(lang, " (in use)", " (사용 중)");
+            }
+            std::cout << "\n";
         }
     }
 
@@ -476,14 +499,41 @@ bool LoadInitialData(const std::string& filename, SystemState& state) {
 
 void ConfigureAdminCards(SystemState& state) {
     std::cout << "\n=== Admin Card Setup ===\n";
+    std::vector<std::string> usedAdminCardNumbers;
     for (Bank* bank : state.banks) {
         if (bank == nullptr) {
             continue;
         }
         std::cout << "Configuring admin card for bank: " << bank->getBankName() << "\n";
-        std::string adminCardNumber = PromptString("  Enter a unique admin card number: ");
+        std::string adminCardNumber;
+        while (true) {
+            adminCardNumber = PromptString("  Enter a unique admin card number: ");
+
+            bool conflict = false;
+            for (std::size_t i = 0; i < usedAdminCardNumbers.size(); ++i) {
+                if (usedAdminCardNumbers[i] == adminCardNumber) {
+                    conflict = true;
+                    break;
+                }
+            }
+            if (!conflict) {
+                for (Card* card : state.cards) {
+                    if (card != nullptr && card->getNumber() == adminCardNumber) {
+                        conflict = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!conflict) {
+                break;
+            }
+
+            std::cout << "  This card number is already used. Please enter a different admin card number.\n";
+        }
         std::string adminPassword = PromptString("  Enter a unique admin password/PIN: ");
         bank->setAdminCard(adminCardNumber, adminPassword);
+        usedAdminCardNumbers.push_back(adminCardNumber);
     }
     std::cout << "========================\n";
 }
@@ -713,8 +763,6 @@ void RunConsole(SystemState& state) {
             PrintSnapshot(state.banks, state.atms);
             continue;
         }
-
-        // Validate main menu choice (0–2)
         bool parsed = true;
         if (choiceInput.empty()) {
             parsed = false;
@@ -897,10 +945,9 @@ void Cleanup(SystemState& state) {
 
 int main() {
     SystemState state;
-    if (!LoadInitialData("sample_initial_condition.txt", state)) {
+    if (!LoadInitialData("initial_condition.txt", state)) {
         return 1;
     }
-
     PrintWelcomeBanner();
     ConfigureAdminCards(state);
     PrintSnapshot(state.banks, state.atms);
