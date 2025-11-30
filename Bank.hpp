@@ -57,7 +57,8 @@ private:
     std::vector<Bank*>* allBanks_;
     std::vector<Transaction*>* transactions_;
     Card* adminCard_;
-    std::string adminPassword_;
+    std::size_t adminPassword_;
+    static std::hash<std::string> passwordhasher;
 };
 
 #endif // BANK_HPP

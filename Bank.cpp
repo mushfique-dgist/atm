@@ -3,6 +3,8 @@
 #include "Card.hpp"
 #include "Transaction.hpp"
 
+std::hash<std::string> Bank::passwordhasher;
+
 Bank::Bank(const std::string& bankName,
            const std::string& bankId,
            std::vector<Bank*>* allBanks,
@@ -14,7 +16,7 @@ Bank::Bank(const std::string& bankName,
       allBanks_(allBanks),
       transactions_(transactions),
       adminCard_(0),
-      adminPassword_() {
+      adminPassword_(0) {
 }
 
 Bank::~Bank() {
@@ -111,7 +113,7 @@ void Bank::setAdminCard(const std::string& cardNumber, const std::string& passwo
 
     adminCard_ = new Card(cardNumber, bankName_, CardRole::Admin);
     cards_.push_back(adminCard_);
-    adminPassword_ = password;
+    adminPassword_ = passwordhasher(password);
 }
 
 bool Bank::verifyUserCredentials(const std::string& cardNumber,
@@ -133,7 +135,7 @@ bool Bank::verifyAdminCredentials(const std::string& cardNumber,
     if (adminCard_ == 0) {
         return false;
     }
-    return adminCard_->getNumber() == cardNumber && adminPassword_ == password;
+    return adminCard_->getNumber() == cardNumber && adminPassword_ == passwordhasher(password);
 }
 
 void Bank::addTransaction(Transaction* transaction) {

@@ -2,6 +2,8 @@
 
 #include "Bank.hpp"
 
+std::hash<std::string> Account::passwordhasher;
+
 Account::Account(Bank* owningBank,
                  const std::string& ownerName,
                  const std::string& accountNumber,
@@ -13,7 +15,7 @@ Account::Account(Bank* owningBank,
       accountNumber_(accountNumber),
       balance_(initialFunds >= 0 ? initialFunds : 0),
       accountCard_(linkedCard),
-      password_(password) {
+      password_(passwordhasher(password)) {
 }
 
 const std::string& Account::getAccountNumber() const {
@@ -69,5 +71,5 @@ void Account::recordTransaction(Transaction* accountTransaction) {
 }
 
 bool Account::checkPassword(const std::string& enteredPassword) const {
-    return password_ == enteredPassword;
+    return password_ == passwordhasher(enteredPassword);
 }

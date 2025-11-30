@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <functional>
 
 class Bank;
 class Card;
@@ -36,8 +37,9 @@ private:
     std::string accountNumber_;
     long long balance_;
     Card* accountCard_;
-    std::string password_;
+    std::size_t password_;
     std::vector<Transaction*> transactionHistory_;
+    static std::hash<std::string> passwordhasher;
 };
 
 #endif // ACCOUNT_HPP
