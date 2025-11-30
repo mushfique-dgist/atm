@@ -17,20 +17,13 @@ Bank::Bank(const std::string& bankName,
       allBanks_(allBanks),
       transactions_(transactions),
       adminCard_(0),
-      adminPassword_(0),
-      powerAccount_(nullptr) {
-    // Create power account for inter-bank transfers
-    powerAccount_ = new Account(this, "POWER", bankName_ + "-POWER", 0, nullptr, "POWER");
+      adminPassword_(0) {
 }
 
 Bank::~Bank() {
     if (adminCard_ != 0) {
         delete adminCard_;
         adminCard_ = 0;
-    }
-    if (powerAccount_ != nullptr) {
-        delete powerAccount_;
-        powerAccount_ = nullptr;
     }
 }
 
@@ -162,10 +155,6 @@ std::map<std::string, Bank*>* Bank::getAllBanks() const {
     return allBanks_;
 }
 
-Account* Bank::getPowerAccount() const {
-    return powerAccount_;
-}
-
 bool Bank::deposit(Account* account, long long amount) {
     if (account == nullptr || amount <= 0) {
         return false;
@@ -191,53 +180,11 @@ bool Bank::transfer(Account* fromAccount,
     if (amount <= 0 || fee < 0) {
         return false;
     }
-    
-    // 1. Check if fromAccount has sufficient funds
     const long long totalCost = amount + fee;
-    if (fromAccount->getBalance() < totalCost) {
-        return false;
-    }
-    
-    Bank* fromBank = fromAccount->getBank();
-    Bank* toBank = toAccount->getBank();
-    
-    // 2. Withdraw from source account (including fee)
     if (!fromAccount->withdraw(totalCost)) {
         return false;
     }
-    
-    // 3. If same bank, direct transfer
-    if (fromBank == toBank) {
-        toAccount->deposit(amount);
-        return true;
-    }
-    
-    // 4. Inter-bank transfer using power accounts
-    // Step 1: Deposit to source bank's power account
-    fromBank->getPowerAccount()->deposit(amount);
-    
-    // Step 2: Transfer between power accounts (virtual)
-    if (fromBank->getPowerAccount()->getBalance() >= amount) {
-        fromBank->getPowerAccount()->withdraw(amount);
-        toBank->getPowerAccount()->deposit(amount);
-    } else {
-        // Rollback if power account transfer fails
-        fromAccount->deposit(totalCost);
-        return false;
-    }
-    
-    // Step 3: Deposit to destination account from destination bank's power account
-    if (toBank->getPowerAccount()->getBalance() >= amount) {
-        toBank->getPowerAccount()->withdraw(amount);
-        toAccount->deposit(amount);
-    } else {
-        // Rollback if final deposit fails
-        toBank->getPowerAccount()->withdraw(amount);
-        fromBank->getPowerAccount()->deposit(amount);
-        fromAccount->deposit(totalCost);
-        return false;
-    }
-    
+    toAccount->deposit(amount);
     return true;
 }
 

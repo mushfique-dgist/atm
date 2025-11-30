@@ -39,7 +39,6 @@ public:
     void addTransaction(Transaction* transaction);
     void setAllBanks(std::map<std::string, Bank*>* allBanks);
     std::map<std::string, Bank*>* getAllBanks() const;
-    Account* getPowerAccount() const;
 
     bool deposit(Account* account, long long amount);
     bool withdraw(Account* account, long long amount);
@@ -62,7 +61,6 @@ private:
     std::vector<Transaction*>* transactions_;
     Card* adminCard_;
     std::size_t adminPassword_;
-    Account* powerAccount_;  // Virtual account for inter-bank transfers
     static std::hash<std::string> passwordhasher;
 };
 

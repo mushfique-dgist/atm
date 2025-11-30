@@ -638,13 +638,11 @@ void RunAdminMenu(ATM* atm,
                 std::cout << T(lang, "Failed to open file.\n", "파일을 열 수 없습니다.\n");
                 break;
             }
-            fout << T(lang, "This ATM sessions: ", "이 ATM 세션 수: ")
-                 << totalSessions
-                 << T(lang, " (customer ", " (고객 ")
-                 << customerSessions
-                 << T(lang, ", admin ", ", 관리자 ")
-                 << adminSessions << ")\n";
-            PrintTransactions(transactions, fout, lang);
+            fout << "/\n";
+            fout << "This ATM sessions: " << totalSessions
+                 << " (customer " << customerSessions
+                 << ", admin " << adminSessions << ")\n";
+            PrintTransactions(transactions, fout, ATMLanguage_English);
             std::cout << T(lang, "Transactions exported to ", "거래 내역을 파일로 저장했습니다: ") << filename << "\n";
             break;
         }
