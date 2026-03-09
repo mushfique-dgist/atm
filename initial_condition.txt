@@ -1,49 +1,36 @@
-3 5 3
-Kakao
-Daegu
-Hana
-Kakao
-Chris
-100-100-111111
-500000
+2 3 3
+Woori
+Shinhan
+Woori
+Daniel
+101-101-101101
+6000
 1111-1111-1111
 1234
-Daegu
-Chris
-200-200-222222
-300000
+Woori
+Kim
+202-202-202202
+4000
 2222-2222-2222
-2345
-Hana
-Andor
-300-300-333333
-100000
+0000
+Shinhan
+Taylor
+303-303-303303
+600000
 3333-3333-3333
-3456
-Kakao
-Mira
-100-100-444444
-700000
-4444-4444-4444
-4567
-Daegu
-Mira
-200-200-555555
-150000
-5555-5555-5555
-5678
-Kakao
-000111
+4321
+Woori
+100001
 Single
 Unilingual
-2 3 1 20
-Daegu
-000222
+3 1 1 5
+Woori
+200002
+Multi
+Unilingual
+5 0 0 0
+Shinhan
+300003
 Multi
 Bilingual
-1 0 10 50
-Hana
-000333
-Multi
-Bilingual
-0 5 0 5
+60 0 0 60
